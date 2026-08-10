@@ -18,6 +18,14 @@ LQ45_PATH = os.path.join(DATA_DIR, "idx_lq45.csv")
 
 BOARD_OPTIONS = ["Utama", "Pengembangan", "Pemantauan Khusus", "Akselerasi", "Ekonomi Baru"]
 
+# Streamlit's st.cache_data hashes _load_summary's OWN source code + args, not the code of
+# data_mod.build_summary/accumulation.py that it calls internally. So editing those modules
+# without touching this function's body leaves stale cached DataFrames (missing/renamed
+# columns from before the edit) being served after a redeploy, even a full reboot, until the
+# TTL expires. Bump this whenever build_summary's output columns change, so it's part of the
+# cache key and old entries can never match.
+SCHEMA_VERSION = "3"
+
 st.set_page_config(page_title="ARA Screener", page_icon="\U0001F4C8", layout="wide")
 
 
@@ -27,7 +35,7 @@ def _load_universe(path: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def _load_summary(kodes: tuple[str, ...], universe_key: str) -> pd.DataFrame:
+def _load_summary(kodes: tuple[str, ...], universe_key: str, schema_version: str) -> pd.DataFrame:
     universe = _load_universe(ALL_TICKERS_PATH if universe_key == "all" else LQ45_PATH)
     history = data_mod.fetch_price_history(list(kodes))
     return data_mod.build_summary(history, universe)
@@ -111,7 +119,9 @@ def main() -> None:
 
     try:
         with st.spinner(f"Mengambil data harga untuk {len(kodes)} saham..."):
-            df = _load_summary(kodes, universe_key if universe_key != "custom" else "all")
+            df = _load_summary(
+                kodes, universe_key if universe_key != "custom" else "all", SCHEMA_VERSION
+            )
             if universe_key == "custom":
                 df = df[df["kode"].isin(kodes)]
     except Exception as exc:  # noqa: BLE001
