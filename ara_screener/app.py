@@ -10,7 +10,7 @@ if _REPO_ROOT not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from ara_screener import data as data_mod
+from ara_screener import accumulation, data as data_mod
 
 DATA_DIR = os.path.join(_REPO_ROOT, "data")
 ALL_TICKERS_PATH = os.path.join(DATA_DIR, "idx_tickers.csv")
@@ -215,12 +215,14 @@ def main() -> None:
             st.dataframe(_momentum_table(potential), use_container_width=True, hide_index=True)
 
     with tab3:
+        n_illiquid = int((~df["akumulasi_likuid"]).sum())
+        n_liquid = int(df["akumulasi_likuid"].sum())
         akumulasi = df[df["skor_akumulasi"] >= akumulasi_threshold].sort_values(
             "skor_akumulasi", ascending=False
         )
         st.write(
             f"{len(akumulasi)} saham masuk persentil atas {100 - akumulasi_threshold}% "
-            f"(dari {len(df)} saham yang dipantau)."
+            f"(dari {n_liquid} saham likuid yang dipantau)."
         )
         st.caption(
             "Skor dari indikator teknikal Chaikin Money Flow (tekanan beli/jual 20 hari) dan tren "
@@ -233,6 +235,13 @@ def main() -> None:
             "dari harga & volume historis, jadi tetap bisa salah/false positive, dan hasilnya "
             "berubah tergantung universe/papan pencatatan yang kamu pilih."
         )
+        if n_illiquid:
+            st.caption(
+                f"⚠️ {n_illiquid} saham dikeluarkan dari ranking ini karena Volume Ratio-nya "
+                f"< {accumulation.MIN_VOLUME_RATIO}x (volume hari ini terlalu tipis buat sinyal "
+                "CMF/OBV dipercaya — rawan false positive, cek tab Semua data kalau tetap mau "
+                "lihat angkanya)."
+            )
         if akumulasi.empty:
             st.info("Tidak ada saham yang memenuhi ambang persentil ini saat ini.")
         else:
