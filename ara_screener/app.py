@@ -10,7 +10,7 @@ if _REPO_ROOT not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from ara_screener import accumulation, data as data_mod
+from ara_screener import accumulation, backtest, data as data_mod
 
 DATA_DIR = os.path.join(_REPO_ROOT, "data")
 ALL_TICKERS_PATH = os.path.join(DATA_DIR, "idx_tickers.csv")
@@ -41,6 +41,12 @@ def _load_summary(kodes: tuple[str, ...], universe_key: str, schema_version: str
     return data_mod.build_summary(history, universe)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _run_backtest(kodes: tuple[str, ...], lookback_days: int, schema_version: str) -> pd.DataFrame:
+    history = data_mod.fetch_price_history(list(kodes), period_days=lookback_days)
+    return backtest.run_backtest(history)
+
+
 def _highlight_progress(val: float) -> str:
     if val >= 100:
         return "background-color: #1e7d32; color: white; font-weight: bold"
@@ -69,7 +75,8 @@ def _render_panduan() -> None:
             "| 🔺 Mendekati ARA | Saham yang harganya SUDAH deket/kena batas ARA hari ini. |\n"
             "| 🔥 Momentum Hari Ini | Saham yang lagi 'panas' hari ini (skor gabungan). |\n"
             "| 🌱 Akumulasi | Saham yang mungkin lagi 'dikumpulin' diam-diam, SEBELUM harga bergerak. |\n"
-            "| 📋 Semua data | Semua saham yang dipantau, bisa di-search. |"
+            "| 📋 Semua data | Semua saham yang dipantau, bisa di-search. |\n"
+            "| 🧪 Backtest | Uji beneran: apakah skor Akumulasi tinggi historisnya lebih sering diikuti ARA besoknya, dibanding pilih saham random? |"
         )
 
     with st.expander("Pengaturan di sidebar"):
@@ -132,6 +139,21 @@ def _render_panduan() -> None:
             "1. Buka tab Mendekati ARA menjelang penutupan, filter progress sudah ≥100%.\n"
             "2. Cek Kekuatan Closing — yang closing-nya kuat berarti demand masih tebal sampai bel penutupan, indikasi kasar sisa antrian beli yang belum kesalur.\n"
             "3. Ingat: dashboard ini nggak punya data antrian beli (order book depth) beneran — ini cuma proxy kasar, bukan kepastian."
+        )
+
+    with st.expander("Cara baca tab Backtest"):
+        st.markdown(
+            "Ngukur beneran apakah skor Akumulasi ada nilainya, pakai data historis:\n"
+            "1. Atur lookback (berapa hari histori) & ambang persentil yang mau diuji.\n"
+            "2. Klik **Jalankan Backtest** — dashboard bakal muter ulang tiap hari di histori "
+            "itu, hitung skor Akumulasi seolah-olah cuma tau data sampai hari itu (nggak "
+            "nyontek hasil besok), lalu cek beneran apakah saham itu kena ARA besoknya.\n"
+            "3. Bandingkan **Hit rate top persentil** (peluang kena ARA besok kalau ambil "
+            "saham dari persentil tinggi) vs **Base rate** (peluang kalau pilih saham random). "
+            "**Lift** di atas 1x berarti skornya beneran ada nilai tambah dibanding tebak-tebakan; "
+            "di sekitar 1x berarti skornya nggak lebih baik dari pilih acak.\n\n"
+            "Perhatikan jumlah observasi di persentil yang diuji — kalau kecil (di bawah ~30), "
+            "angka hit rate/lift-nya belum tentu stabil, jangan buru-buru disimpulkan."
         )
 
     with st.expander("Batasan yang wajib diingat"):
@@ -240,12 +262,13 @@ def main() -> None:
     col3.metric("Sudah kena ARA hari ini", int((df["progress_ke_ara_pct"] >= 100).sum()))
     col4.metric("Kandidat akumulasi", int((df["skor_akumulasi"] >= akumulasi_threshold).sum()))
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
             "\U0001F53A Mendekati ARA",
             "\U0001F525 Momentum Hari Ini",
             "\U0001F331 Akumulasi",
             "\U0001F4CB Semua data",
+            "\U0001F9EA Backtest",
             "\U0001F4D6 Panduan",
         ]
     )
@@ -384,6 +407,80 @@ def main() -> None:
         )
 
     with tab5:
+        st.write(
+            "Muter ulang histori harga: tiap hari, hitung skor Akumulasi SEOLAH-OLAH cuma tau "
+            "data sampai hari itu, lalu cek beneran apakah saham itu kena ARA di hari "
+            "berikutnya. Hasilnya dibandingkan ke base rate acak dari seluruh universe, biar "
+            "ketauan skor ini beneran ada 'lift'-nya atau nggak."
+        )
+        st.caption(
+            "⚠️ Bukan jaminan strategi profitable — backtest ini nggak masukin biaya transaksi, "
+            "likuiditas eksekusi riil, atau survivorship bias (saham yang sudah delisting nggak "
+            "ikut kehitung). Hasil masa lalu juga nggak menjamin masa depan."
+        )
+
+        bt_col1, bt_col2 = st.columns(2)
+        lookback_days = bt_col1.slider(
+            "Lookback histori (hari kalender)", min_value=90, max_value=250, value=150, step=10
+        )
+        bt_persentil = bt_col2.slider(
+            "Ambang persentil yang diuji", min_value=50, max_value=100, value=80, step=5
+        )
+
+        run_backtest_clicked = st.button("\U0001F9EA Jalankan Backtest", type="primary")
+        if run_backtest_clicked:
+            st.session_state["backtest_kodes"] = kodes
+            st.session_state["backtest_lookback"] = lookback_days
+            try:
+                with st.spinner(
+                    f"Mengunduh {lookback_days} hari histori untuk {len(kodes)} saham dan "
+                    "menghitung ulang skor tiap hari — bisa makan waktu beberapa menit untuk "
+                    "universe besar..."
+                ):
+                    st.session_state["backtest_result"] = _run_backtest(
+                        kodes, lookback_days, SCHEMA_VERSION
+                    )
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Backtest gagal jalan. Detail error: {exc}")
+                st.session_state.pop("backtest_result", None)
+
+        bt_result = st.session_state.get("backtest_result")
+        if bt_result is None:
+            st.info("Klik 'Jalankan Backtest' buat mulai. Belum ada hasil yang disimpan.")
+        elif bt_result.empty:
+            st.warning("Nggak ada data yang cukup buat backtest dari universe/lookback ini.")
+        else:
+            summary = backtest.summarize(bt_result, persentil_threshold=bt_persentil)
+            st.caption(
+                f"Backtest dari {st.session_state.get('backtest_lookback', lookback_days)} hari "
+                f"histori, {summary['n_saham']} saham, {summary['n_hari']} hari observasi "
+                f"({summary['n_observasi']} baris total)."
+            )
+            m1, m2, m3 = st.columns(3)
+            m1.metric(
+                f"Hit rate top persentil ≥{bt_persentil}",
+                f"{summary['top_rate_pct']:.1f}%",
+                help=f"{summary['n_top_hit']} dari {summary['n_top']} observasi di persentil ini kena ARA besoknya.",
+            )
+            m2.metric(
+                "Base rate (semua saham/hari)",
+                f"{summary['base_rate_pct']:.1f}%",
+                help="Peluang kena ARA besok kalau pilih saham random dari seluruh observasi.",
+            )
+            lift = summary["lift"]
+            m3.metric(
+                "Lift",
+                f"{lift:.1f}x" if pd.notna(lift) else "n/a",
+                help="Hit rate top persentil dibagi base rate. >1x berarti skornya ada nilai tambah dibanding pilih random.",
+            )
+            if summary["n_top"] < 30:
+                st.caption(
+                    f"⚠️ Cuma {summary['n_top']} observasi di atas ambang persentil ini — "
+                    "sampelnya kecil, angka hit rate/lift di atas belum tentu stabil. Coba "
+                    "perpanjang lookback atau perbesar universe."
+                )
+
+    with tab6:
         _render_panduan()
 
     st.divider()

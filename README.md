@@ -31,7 +31,13 @@ fundamental atau berita korporasi.
   disesatkan segelintir transaksi kecil (kasus nyata: MKTR sempat nangkring
   persentil 100 padahal broker summary riilnya net distribution, pas Volume
   Ratio-nya cuma 0.11x).
-- **Panduan**: tab terakhir di dashboard, isinya cara baca tiap tab/kolom &
+- **Backtest**: muter ulang histori harga dan hitung skor Akumulasi tiap hari
+  seolah-olah cuma tau data sampai hari itu (nggak nyontek hasil besok), lalu
+  bandingkan hit rate "kena ARA besok" dari persentil atas vs base rate acak
+  — lihat `ara_screener/backtest.py`. Ngasih angka "lift" yang jelas (bukan
+  vibes) buat tau skor Akumulasi beneran ada nilainya atau nggak, sekaligus
+  cara buat tau apakah formulanya perlu di-tuning lagi.
+- **Panduan**: tab di dashboard, isinya cara baca tiap tab/kolom &
   contoh alur pakai — hidup di kode yang sama (`ara_screener/app.py`,
   fungsi `_render_panduan`), jadi otomatis nyambung tiap kali fitur di atas
   berubah, nggak kayak dokumen terpisah yang gampang basi.
