@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
+import sys
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 import pandas as pd
 import streamlit as st
 
 from ara_screener import data as data_mod
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+DATA_DIR = os.path.join(_REPO_ROOT, "data")
 ALL_TICKERS_PATH = os.path.join(DATA_DIR, "idx_tickers.csv")
 LQ45_PATH = os.path.join(DATA_DIR, "idx_lq45.csv")
 
