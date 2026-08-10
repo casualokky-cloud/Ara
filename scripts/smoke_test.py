@@ -29,9 +29,11 @@ def fake_history(prev_close: float, last_price: float, volume: float) -> pd.Data
     )
 
 
-def fake_accumulation_history(quiet: bool) -> pd.DataFrame:
+def fake_accumulation_history(quiet: bool, thin_last_day: bool = False) -> pd.DataFrame:
     """quiet=True -> harga flat, closing dekat high, volume naik (pola akumulasi).
-    quiet=False -> harga flat, closing dekat low, volume datar (kontrol/distribusi)."""
+    quiet=False -> harga flat, closing dekat low, volume datar (kontrol/distribusi).
+    thin_last_day=True -> volume hari terakhir dibikin jauh di bawah rata-rata (kasus MKTR:
+    pola CMF/OBV keliatan bagus tapi volumenya terlalu tipis buat dipercaya)."""
     dates = pd.date_range("2026-06-01", periods=25, freq="B")
     n = len(dates)
     closes = np.full(n, 500.0) + np.sin(np.linspace(0, 3, n))  # nyaris flat
@@ -44,6 +46,9 @@ def fake_accumulation_history(quiet: bool) -> pd.DataFrame:
         lows = closes - 1
         volumes = np.full(n, 800_000.0)  # volume datar
     opens = (highs + lows) / 2
+    if thin_last_day:
+        volumes = volumes.copy()
+        volumes[-1] = volumes[:-1].mean() * 0.05  # volume ratio ~0.05x, jauh di bawah MIN_VOLUME_RATIO
     return pd.DataFrame(
         {"Open": opens, "High": highs, "Low": lows, "Close": closes, "Volume": volumes},
         index=dates,
@@ -52,9 +57,9 @@ def fake_accumulation_history(quiet: bool) -> pd.DataFrame:
 
 universe = pd.DataFrame(
     {
-        "kode": ["AAAA", "BBBB", "CCCC", "DDDD", "EEEE"],
-        "nama": ["Test A", "Test B", "Test C", "Test D", "Test E"],
-        "papan": ["Utama"] * 5,
+        "kode": ["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF"],
+        "nama": ["Test A", "Test B", "Test C", "Test D", "Test E", "Test F"],
+        "papan": ["Utama"] * 6,
     }
 )
 
@@ -64,6 +69,7 @@ history = {
     "CCCC": fake_history(prev_close=6000, last_price=7200, volume=2_000_000),  # exactly at ARA (20% band)
     "DDDD": fake_accumulation_history(quiet=True),  # pola akumulasi
     "EEEE": fake_accumulation_history(quiet=False),  # kontrol: bukan akumulasi
+    "FFFF": fake_accumulation_history(quiet=True, thin_last_day=True),  # kasus MKTR: pola bagus, volume tipis
 }
 
 summary = data_mod.build_summary(history, universe)
@@ -85,5 +91,13 @@ assert abs(row_c["progress_ke_ara_pct"] - 100) < 0.5, row_c["progress_ke_ara_pct
 skor_d = summary.loc[summary["kode"] == "DDDD", "skor_akumulasi"].iloc[0]
 skor_e = summary.loc[summary["kode"] == "EEEE", "skor_akumulasi"].iloc[0]
 assert skor_d > skor_e, f"DDDD (pola akumulasi) harus > EEEE (kontrol): {skor_d} vs {skor_e}"
+
+row_f = summary[summary["kode"] == "FFFF"].iloc[0]
+assert row_f["volume_ratio"] < 0.3, row_f["volume_ratio"]
+assert not row_f["akumulasi_likuid"], "FFFF (volume tipis) harusnya ditandai nggak likuid"
+assert pd.isna(row_f["skor_akumulasi"]), (
+    f"FFFF (kasus MKTR: pola bagus tapi volume tipis) harus dikeluarkan dari ranking "
+    f"(skor_akumulasi NaN), malah dapet {row_f['skor_akumulasi']}"
+)
 
 print("\nOK: semua assertion lolos.")

@@ -142,10 +142,20 @@ def build_summary(price_history: dict[str, pd.DataFrame], universe: pd.DataFrame
 
     result = pd.DataFrame(rows)
     if not result.empty:
-        # Skor akumulasi mentah gampang "terinflasi" bareng-bareng pas market lagi uptrend
-        # (banyak saham kebagian CMF/OBV positif sekaligus), jadi ambang skor absolut jadi
-        # nggak diskriminatif. Ranking persentil relatif ke universe yang lagi dipantau bikin
-        # cuma saham yang beneran menonjol HARI ITU yang dapat skor tinggi, apa pun kondisi
-        # pasarnya secara umum.
-        result["skor_akumulasi"] = result["skor_akumulasi_mentah"].rank(pct=True) * 100
+        # Saham dengan volume hari ini jauh di bawah rata-rata 20 hari dikeluarkan dari
+        # ranking sama sekali — di volume setipis itu, CMF/OBV gampang disesatkan segelintir
+        # transaksi kecil dan nggak merepresentasikan tekanan beli/jual yang sebenarnya
+        # (lihat docstring accumulation.py, kasus MKTR).
+        result["akumulasi_likuid"] = result["volume_ratio"] >= accumulation.MIN_VOLUME_RATIO
+        result["skor_akumulasi"] = float("nan")
+        liquid = result["akumulasi_likuid"]
+        if liquid.any():
+            # Skor akumulasi mentah gampang "terinflasi" bareng-bareng pas market lagi uptrend
+            # (banyak saham kebagian CMF/OBV positif sekaligus), jadi ambang skor absolut jadi
+            # nggak diskriminatif. Ranking persentil relatif ke saham LIKUID yang lagi dipantau
+            # bikin cuma yang beneran menonjol HARI ITU yang dapat skor tinggi, apa pun kondisi
+            # pasarnya secara umum.
+            result.loc[liquid, "skor_akumulasi"] = (
+                result.loc[liquid, "skor_akumulasi_mentah"].rank(pct=True) * 100
+            )
     return result

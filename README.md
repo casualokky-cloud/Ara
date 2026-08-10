@@ -25,7 +25,12 @@ fundamental atau berita korporasi.
   ditampilkan sebagai **persentil** (0-100) relatif ke universe yang lagi
   dipantau — bukan skor absolut — supaya threshold-nya tetap diskriminatif
   walau lagi market-wide uptrend (persentil 90 = 10% paling menonjol hari
-  itu, dari universe/papan pencatatan yang kamu pilih).
+  itu, dari universe/papan pencatatan yang kamu pilih). Saham dengan Volume
+  Ratio di bawah `accumulation.MIN_VOLUME_RATIO` (default 0.3x) dikeluarkan
+  dari ranking ini sama sekali — di volume setipis itu CMF/OBV gampang
+  disesatkan segelintir transaksi kecil (kasus nyata: MKTR sempat nangkring
+  persentil 100 padahal broker summary riilnya net distribution, pas Volume
+  Ratio-nya cuma 0.11x).
 - Aturan ARA/ARB otomatis mengikuti tier harga acuan sesuai aturan asimetris
   BEI (berlaku sejak 8 April 2025) — lihat `ara_screener/rules.py`.
 - Universe saham: LQ45 (cepat), semua saham IDX (~950, lebih lambat), atau

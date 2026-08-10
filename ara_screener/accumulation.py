@@ -18,6 +18,17 @@ Kombinasi CMF & OBV tinggi SAAT harga masih relatif flat/belum breakout
 adalah pola klasik "akumulasi diam-diam sebelum harga bergerak" — kandidat
 early-entry. Ini kebalikan dari skor "Potensi ARA" di scoring.py yang
 justru menandai saham yang HARGANYA SUDAH bergerak hari itu.
+
+PERINGATAN SOAL SAHAM TIPIS: CMF & OBV cuma lihat "di mana closing mendarat
+dalam range high-low", dikali volume — bukan siapa yang beli/jual beneran.
+Pas volume hari itu jauh di bawah rata-rata (Volume Ratio rendah), sinyalnya
+gampang disesatkan segelintir transaksi kecil, apalagi di saham harga rendah
+yang tipis diperdagangkan (rawan "digoreng"). Kasus nyata: MKTR pernah
+nangkring persentil 100 di sini padahal broker summary riilnya (Stockbit)
+nunjukin "Big Distribution", justru pas Volume Ratio-nya cuma 0.11x —
+volume terlalu tipis buat sinyal CMF/OBV dipercaya. Makanya ada
+MIN_VOLUME_RATIO di bawah: saham dengan Volume Ratio di bawah itu dikeluarkan
+dari ranking persentil sama sekali, bukan cuma diturunkan skornya.
 """
 
 from __future__ import annotations
@@ -27,6 +38,7 @@ import math
 import pandas as pd
 
 WINDOW = 20
+MIN_VOLUME_RATIO = 0.3
 
 
 def chaikin_money_flow(df: pd.DataFrame, window: int = WINDOW) -> float:
