@@ -31,6 +31,10 @@ fundamental atau berita korporasi.
   disesatkan segelintir transaksi kecil (kasus nyata: MKTR sempat nangkring
   persentil 100 padahal broker summary riilnya net distribution, pas Volume
   Ratio-nya cuma 0.11x).
+- **Panduan**: tab terakhir di dashboard, isinya cara baca tiap tab/kolom &
+  contoh alur pakai — hidup di kode yang sama (`ara_screener/app.py`,
+  fungsi `_render_panduan`), jadi otomatis nyambung tiap kali fitur di atas
+  berubah, nggak kayak dokumen terpisah yang gampang basi.
 - Aturan ARA/ARB otomatis mengikuti tier harga acuan sesuai aturan asimetris
   BEI (berlaku sejak 8 April 2025) — lihat `ara_screener/rules.py`.
 - Universe saham: LQ45 (cepat), semua saham IDX (~950, lebih lambat), atau

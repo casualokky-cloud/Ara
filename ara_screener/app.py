@@ -49,6 +49,105 @@ def _highlight_progress(val: float) -> str:
     return ""
 
 
+def _render_panduan() -> None:
+    """Panduan pakai dashboard, hidup di kode yang sama jadi otomatis ikut ter-update
+    tiap kali tab/kolom/skor di atas berubah — nggak ada dokumen terpisah yang basi."""
+    st.markdown(
+        "Panduan cara baca dashboard ini. Karena hidup satu kode sama dashboard-nya, isinya "
+        "otomatis nyambung tiap kali ada perubahan fitur."
+    )
+
+    with st.expander("Apa itu ARA Screener?", expanded=True):
+        st.markdown(
+            "Dashboard ini mindai saham-saham di Bursa Efek Indonesia (BEI/IDX) buat nemuin "
+            "saham yang **mendekati atau berpotensi kena Auto Reject Atas (ARA)** — batas "
+            "kenaikan harga maksimal dalam satu hari perdagangan. Ini bukan alat prediksi — "
+            "anggap sebagai **alat bantu nyaring** dari ratusan saham jadi daftar pendek yang "
+            "layak diperhatikan lebih lanjut.\n\n"
+            "| Tab | Buat apa |\n"
+            "|---|---|\n"
+            "| 🔺 Mendekati ARA | Saham yang harganya SUDAH deket/kena batas ARA hari ini. |\n"
+            "| 🔥 Momentum Hari Ini | Saham yang lagi 'panas' hari ini (skor gabungan). |\n"
+            "| 🌱 Akumulasi | Saham yang mungkin lagi 'dikumpulin' diam-diam, SEBELUM harga bergerak. |\n"
+            "| 📋 Semua data | Semua saham yang dipantau, bisa di-search. |"
+        )
+
+    with st.expander("Pengaturan di sidebar"):
+        st.markdown(
+            "| Pengaturan | Fungsinya |\n"
+            "|---|---|\n"
+            "| Universe saham | LQ45 (cepat) / Semua saham IDX (~950, lebih lambat) / Upload CSV kode saham sendiri. |\n"
+            "| Papan pencatatan | Filter berdasarkan papan: Utama, Pengembangan, Pemantauan Khusus, dll. |\n"
+            "| Ambang 'Mendekati ARA' | Batas minimal progress ke ARA buat masuk tab 1. |\n"
+            "| Ambang skor 'Momentum Hari Ini' | Batas minimal skor buat masuk tab 2. |\n"
+            "| Ambang persentil 'Akumulasi' | Mis. 80 = tampilin cuma 20% saham paling menonjol. |\n"
+            "| Muat / Refresh data | Ambil data harga terbaru & buang cache lama. |\n\n"
+            "Tips: pertama kali coba, pakai universe **LQ45** dulu biar cepat, baru pindah ke "
+            "'Semua saham IDX' kalau mau eksplor lebih luas."
+        )
+
+    with st.expander("Cara baca tab Mendekati ARA & Momentum Hari Ini"):
+        st.markdown(
+            "| Kolom | Artinya |\n"
+            "|---|---|\n"
+            "| Harga / Prev Close / % Chg | Harga sekarang, penutupan kemarin, dan perubahannya. |\n"
+            "| Limit ARA | Harga batas ARA hari ini (Prev Close x (1 + persentase ARA)). |\n"
+            "| Progress ke ARA (%) | Seberapa dekat harga sekarang ke Limit ARA. 100% = sudah kena ARA. |\n"
+            "| Kekuatan Closing (%) | Posisi harga sekarang dalam range high-low hari ini — makin tinggi, makin dekat ke high (demand masih kuat). |\n"
+            "| Volume Ratio | Volume hari ini dibanding rata-rata 20 hari. |\n"
+            "| Skor Momentum | Gabungan proximity ke ARA (35 poin), lonjakan volume (30 poin), gap up (20 poin), dan hari beruntun naik (15 poin). |\n\n"
+            "⚠️ **Penting:** skor/progress tinggi = saham LAGI panas HARI INI, bukan prediksi "
+            "bakal ARA. Kalau kamu beli yang paling atas skornya, kemungkinan besar kamu beli "
+            "di titik dia udah paling deket top hari itu — telat masuk. Buat kandidat SEBELUM "
+            "harga bergerak, cek tab Akumulasi."
+        )
+
+    with st.expander("Cara baca tab Akumulasi"):
+        st.markdown(
+            "Kebalikan dari tab Momentum: nyari saham yang mungkin lagi 'dikumpulin' diam-diam "
+            "**sebelum** harga bergerak.\n\n"
+            "| Kolom | Artinya |\n"
+            "|---|---|\n"
+            "| Chg 20D (%) | Perubahan harga 20 hari terakhir. Idealnya kecil/flat (belum breakout). |\n"
+            "| CMF (20D) | Chaikin Money Flow: tekanan beli (+) / jual (-) dari posisi closing dalam range high-low, dibobot volume. |\n"
+            "| Tren OBV | Apakah volume 20 hari terakhir condong ke hari naik atau turun. |\n"
+            "| Persentil Akumulasi | Ranking 0-100 RELATIF ke saham lain yang dipantau hari itu, bukan skor mutlak — 90 berarti termasuk 10% paling menonjol. |\n\n"
+            f"Saham dengan Volume Ratio di bawah **{accumulation.MIN_VOLUME_RATIO}x** dikeluarkan "
+            "dari ranking ini sama sekali — di volume setipis itu, CMF/OBV gampang disesatkan "
+            "segelintir transaksi kecil (kasus nyata pernah kejadian: sebuah saham nangkring "
+            "persentil 100 padahal broker summary riil di Stockbit nunjukin *Big Distribution*, "
+            "pas Volume Ratio-nya cuma 0.11x).\n\n"
+            "🚫 **INI BUKAN bandarmology** (data broker net-buy beneran) — murni dari harga & "
+            "volume historis, jadi tetap bisa salah/false positive. Anggap sebagai watchlist "
+            "awal, bukan sinyal beli."
+        )
+
+    with st.expander("Cara pakai buat 2 gaya trading"):
+        st.markdown(
+            "**Beli pagi, jual sore (chasing momentum intraday):**\n"
+            "1. Buka tab Akumulasi, cari kandidat persentil tinggi tapi Chg 20D masih kecil (belum breakout) — watchlist awal.\n"
+            "2. Pantau sepanjang hari: kalau kandidat mulai masuk tab Mendekati ARA dengan progress di kisaran 50-80% (bukan yang udah 95%+), itu momen lebih masuk akal buat entry.\n"
+            "3. Cross-check Volume Ratio & Kekuatan Closing sebelum eksekusi — data yfinance bisa delay, tetap cek order book asli di aplikasi sekuritas.\n\n"
+            "**Beli sore, jual pagi (nebak gap-up/lanjutan ARA):**\n"
+            "1. Buka tab Mendekati ARA menjelang penutupan, filter progress sudah ≥100%.\n"
+            "2. Cek Kekuatan Closing — yang closing-nya kuat berarti demand masih tebal sampai bel penutupan, indikasi kasar sisa antrian beli yang belum kesalur.\n"
+            "3. Ingat: dashboard ini nggak punya data antrian beli (order book depth) beneran — ini cuma proxy kasar, bukan kepastian."
+        )
+
+    with st.expander("Batasan yang wajib diingat"):
+        st.markdown(
+            "- Data harga dari Yahoo Finance biasanya delay beberapa menit.\n"
+            "- Harga Limit ARA dihitung dari persentase doang, TANPA pembulatan ke fraksi harga "
+            "(tick size) resmi BEI — jangan dipakai buat pasang order.\n"
+            "- Semua skor (Momentum & Akumulasi) adalah heuristik rule-based dari harga/volume "
+            "historis — BELUM divalidasi/backtest terhadap histori ARA riil.\n"
+            "- Tab Akumulasi BUKAN bandarmology.\n"
+            "- Fetching 'Semua saham IDX' (~950 saham) bisa makan waktu beberapa menit.\n\n"
+            "**Bukan nasihat keuangan.** Dashboard ini alat bantu screening, bukan rekomendasi "
+            "beli/jual."
+        )
+
+
 def main() -> None:
     st.title("ARA Screener \U0001F4C8")
     st.caption(
@@ -141,12 +240,13 @@ def main() -> None:
     col3.metric("Sudah kena ARA hari ini", int((df["progress_ke_ara_pct"] >= 100).sum()))
     col4.metric("Kandidat akumulasi", int((df["skor_akumulasi"] >= akumulasi_threshold).sum()))
 
-    tab1, tab2, tab3, tab4 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "\U0001F53A Mendekati ARA",
             "\U0001F525 Momentum Hari Ini",
             "\U0001F331 Akumulasi",
             "\U0001F4CB Semua data",
+            "\U0001F4D6 Panduan",
         ]
     )
 
@@ -282,6 +382,9 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
         )
+
+    with tab5:
+        _render_panduan()
 
     st.divider()
     st.caption(
