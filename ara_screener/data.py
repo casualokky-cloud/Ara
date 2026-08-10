@@ -24,15 +24,18 @@ def _chunks(items: list[str], size: int):
         yield items[i : i + size]
 
 
-def fetch_price_history(kodes: list[str]) -> dict[str, pd.DataFrame]:
-    """Ambil histori harga harian per kode saham (tanpa suffix .JK sebagai key)."""
+def fetch_price_history(kodes: list[str], period_days: int = LOOKBACK_DAYS) -> dict[str, pd.DataFrame]:
+    """Ambil histori harga harian per kode saham (tanpa suffix .JK sebagai key).
+
+    period_days bisa dibikin lebih panjang dari default (misal buat backtest yang
+    butuh berbulan-bulan histori, bukan cuma 20-45 hari buat screening harian)."""
     result: dict[str, pd.DataFrame] = {}
     symbols = [yf_symbol(k) for k in kodes]
 
     for batch in _chunks(symbols, CHUNK_SIZE):
         raw = yf.download(
             tickers=batch,
-            period=f"{LOOKBACK_DAYS}d",
+            period=f"{period_days}d",
             interval="1d",
             group_by="ticker",
             threads=True,

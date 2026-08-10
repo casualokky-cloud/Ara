@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pandas as pd
 
+from ara_screener import accumulation, backtest
 from ara_screener import data as data_mod
 from ara_screener import rules
 
@@ -101,3 +102,62 @@ assert pd.isna(row_f["skor_akumulasi"]), (
 )
 
 print("\nOK: semua assertion lolos.")
+
+
+def fake_backtest_history(quiet: bool, jump_every: int | None) -> pd.DataFrame:
+    """quiet=True -> pola akumulasi (closing dekat high, volume naik) di sepanjang histori.
+    quiet=False -> pola distribusi (kontrol), nggak pernah dikasih lonjakan ARA.
+    jump_every -> tiap N hari evaluasi, hari BERIKUTNYA dipaksa lompat +30% (kena ARA)."""
+    dates = pd.date_range("2026-01-05", periods=50, freq="B")
+    n = len(dates)
+    closes = np.full(n, 500.0) + np.sin(np.linspace(0, 6, n)) * 2
+    if quiet:
+        highs = closes + 1
+        lows = closes - 5
+        volumes = np.linspace(500_000, 1_500_000, n)
+    else:
+        highs = closes + 5
+        lows = closes - 1
+        volumes = np.full(n, 800_000.0)
+    opens = (highs + lows) / 2
+    closes, highs, lows, opens = closes.copy(), highs.copy(), lows.copy(), opens.copy()
+
+    if jump_every:
+        for i in range(accumulation.WINDOW, n - 1):
+            if (i - accumulation.WINDOW) % jump_every == 0:
+                jump_close = closes[i] * 1.30  # jauh di atas batas ARA tier ini (25%)
+                closes[i + 1] = jump_close
+                highs[i + 1] = max(highs[i + 1], jump_close)
+                lows[i + 1] = min(lows[i + 1], jump_close)
+                opens[i + 1] = jump_close
+
+    return pd.DataFrame(
+        {"Open": opens, "High": highs, "Low": lows, "Close": closes, "Volume": volumes},
+        index=dates,
+    )
+
+
+bt_history = {
+    "JJJJ": fake_backtest_history(quiet=True, jump_every=5),  # akumulasi, sering lanjut ARA
+    "KKKK": fake_backtest_history(quiet=True, jump_every=5),  # akumulasi, sering lanjut ARA
+    "LLLL": fake_backtest_history(quiet=False, jump_every=None),  # distribusi, nggak pernah ARA
+    "MMMM": fake_backtest_history(quiet=False, jump_every=None),  # distribusi, nggak pernah ARA
+}
+
+bt_result = backtest.run_backtest(bt_history)
+assert not bt_result.empty, "Backtest harusnya menghasilkan observasi dari data uji ini"
+
+bt_summary = backtest.summarize(bt_result, persentil_threshold=80)
+print(
+    f"\nBacktest: n_observasi={bt_summary['n_observasi']} "
+    f"base_rate={bt_summary['base_rate_pct']:.1f}% "
+    f"top_rate={bt_summary['top_rate_pct']:.1f}% "
+    f"lift={bt_summary['lift']:.2f}x"
+)
+assert bt_summary["top_rate_pct"] > bt_summary["base_rate_pct"], (
+    "Saham berpola akumulasi (JJJJ/KKKK) seharusnya mendominasi persentil atas dan "
+    f"punya hit rate lebih tinggi dari base rate: {bt_summary['top_rate_pct']} vs "
+    f"{bt_summary['base_rate_pct']}"
+)
+
+print("OK: backtest assertion lolos.")
