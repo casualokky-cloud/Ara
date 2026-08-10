@@ -70,6 +70,37 @@ streamlit run ara_screener/app.py
 
 Buka `http://localhost:8501` di browser.
 
+## Email pagi otomatis (Momentum Hari Ini)
+
+`.github/workflows/morning-momentum-email.yml` + `scripts/send_morning_momentum.py`
+ngirim email berisi tab Momentum Hari Ini tiap hari kerja jam **09:05 WIB** lewat
+GitHub Actions (bukan lewat dashboard, biar tetap jalan walau nggak ada yang buka
+Streamlit Cloud-nya).
+
+Setup (sekali aja):
+
+1. Aktifkan **2-Step Verification** di akun Google pengirim (syarat App Password),
+   di [myaccount.google.com/security](https://myaccount.google.com/security).
+2. Bikin **App Password** di [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   (pilih app "Mail"), copy password 16 digit yang muncul.
+3. Di repo GitHub ini: **Settings → Secrets and variables → Actions → New repository secret**,
+   tambahin 3 secret:
+   - `SMTP_USERNAME` — alamat Gmail pengirim (boleh sama dengan tujuan).
+   - `SMTP_PASSWORD` — App Password 16 digit dari langkah 2 (bukan password akun biasa).
+   - `EMAIL_TO` — alamat tujuan email.
+4. Cek jalan apa nggak tanpa nunggu jadwal: tab **Actions** di repo → pilih workflow
+   "Morning Momentum Email" → **Run workflow**.
+
+Ambang skor (default 50) & papan pencatatan (default "Utama") bisa diubah lewat
+konstanta di `scripts/send_morning_momentum.py`, atau tambahin repository variable
+`MOMENTUM_THRESHOLD` di GitHub Settings buat ganti ambang tanpa edit kode.
+
+⚠️ Data ~5 menit setelah open itu volume & momentumnya masih tipis banget — ARA
+kolomnya kemungkinan besar masih kosong pagi-pagi, isinya lebih ke gap-up & streak
+dari hari sebelumnya. Jadwal GitHub Actions juga kadang meleset beberapa menit dari
+jam yang di-set (bukan real-time cron), dan workflow terjadwal otomatis nonaktif
+kalau repo nggak ada commit sama sekali selama 60 hari.
+
 ## Memperbarui daftar emiten
 
 Daftar kode saham (`data/idx_tickers.csv`, `data/idx_lq45.csv`) berasal dari

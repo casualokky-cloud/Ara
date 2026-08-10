@@ -1,0 +1,26 @@
+name: Morning Momentum Email
+
+on:
+  schedule:
+    # 02:05 UTC = 09:05 WIB (UTC+7, no DST), hari kerja saja (IDX libur Sabtu/Minggu).
+    - cron: "5 2 * * 1-5"
+  workflow_dispatch: {}
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Kirim email Momentum Hari Ini
+        env:
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python scripts/send_morning_momentum.py
