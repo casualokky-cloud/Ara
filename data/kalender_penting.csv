@@ -1,0 +1,38 @@
+tanggal_mulai,tanggal_selesai,event,kategori,catatan,sumber
+2026-01-20,2026-01-21,RDG Bank Indonesia (cakupan triwulanan),Bank Indonesia,Keputusan BI Rate + evaluasi triwulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-01-27,2026-01-28,FOMC Meeting (Rate Decision),Fed/Global,Keputusan suku bunga The Fed + konferensi pers,https://fedratecalc.com/fomc-meeting-schedule/
+2026-02-10,2026-02-10,MSCI Quarterly Index Review - Indonesia,Index Rebalancing,Review kuartalan konstituen & bobot indeks MSCI,https://www.msci.com/indexes/quarterly-index-review
+2026-02-18,2026-02-19,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-03-16,2026-03-17,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-03-17,2026-03-18,FOMC Meeting + Dot Plot,Fed/Global,Termasuk proyeksi ekonomi (dot plot) - biasanya lebih volatile dari meeting biasa,https://fedratecalc.com/fomc-meeting-schedule/
+2026-04-21,2026-04-22,RDG Bank Indonesia (cakupan triwulanan),Bank Indonesia,Keputusan BI Rate + evaluasi triwulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-04-28,2026-04-29,FOMC Meeting,Fed/Global,Keputusan suku bunga The Fed + konferensi pers,https://fedratecalc.com/fomc-meeting-schedule/
+2026-05-04,2026-05-04,Efektif Evaluasi Mayor LQ45/IDX30/IDX80,Index Rebalancing,Rebalancing indeks utama BEI (sudah berlalu - referensi historis),https://kumparan.com/kumparanbisnis/bei-ubah-daftar-saham-lq45-idx80-dan-idx30-mulai-berlaku-3-agustus-2026-27sHoiFxpNw
+2026-05-19,2026-05-20,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-05-22,2026-05-22,Pengumuman FTSE Russell GEIS Review Juni 2026 (Indonesia),Index Rebalancing,Pengumuman hasil review sebelum efektif 22 Juni,https://research.ftserussell.com/products/index-notices/home/getnotice/?id=2619601
+2026-06-16,2026-06-17,FOMC Meeting + Dot Plot,Fed/Global,Termasuk proyeksi ekonomi (dot plot),https://fedratecalc.com/fomc-meeting-schedule/
+2026-06-17,2026-06-18,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-06-22,2026-06-22,Efektif FTSE Russell Indonesia Index Review,Index Rebalancing,Hasil review Juni 2026 mulai berlaku,https://www.lseg.com/en/media-centre/press-releases/ftse-russell/2026/ftse-set-index-series-june-2026-semi-annual-review
+2026-07-21,2026-07-22,RDG Bank Indonesia (cakupan triwulanan),Bank Indonesia,Keputusan BI Rate + evaluasi triwulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-07-28,2026-07-29,FOMC Meeting,Fed/Global,Keputusan suku bunga The Fed + konferensi pers,https://fedratecalc.com/fomc-meeting-schedule/
+2026-08-03,2026-08-03,Efektif Evaluasi Mayor LQ45/IDX30/IDX80,Index Rebalancing,"NCKL & INDY masuk LQ45, DEWA masuk IDX30 gantiin PTBA",https://www.cnbcindonesia.com/market/20260728133923-17-754414/bei-rombak-konstituen-idx80-lq45-dan-idx30/amp
+2026-08-12,2026-08-12,Pengumuman MSCI Quarterly Review,Index Rebalancing,Efektif 1 September 2026,https://app2.msci.com/eqb/pressreleases/archive/ir_dates.csv
+2026-08-14,2026-08-14,Pidato Presiden: RUU APBN 2027 & Nota Keuangan di DPR,Lainnya,Sinyal arah kebijakan fiskal tahun depan - sering pengaruhi sentimen pasar domestik,https://presidenri.go.id/siaran-pers/presiden-prabowo-sampaikan-pidato-kenegaraan-penyampaian-ruu-apbn-2026-dan-nota-keuangan/
+2026-08-18,2026-08-19,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-08-27,2026-08-29,Jackson Hole Economic Policy Symposium,Fed/Global,Simposium tahunan bank sentral global - pidato Ketua The Fed biasanya jadi sorotan pasar,https://www.kansascityfed.org/research/jackson-hole-economic-symposium/about-jackson-hole-economic-symposium/
+2026-09-01,2026-09-01,Rilis Inflasi Agustus 2026 (BPS),Data Ekonomi ID,Perkiraan tanggal berdasarkan pola rilis awal bulan - cek bps.go.id,https://www.bps.go.id/en/pressrelease
+2026-09-01,2026-09-01,Efektif MSCI Quarterly Index Review,Index Rebalancing,Hasil review yang diumumkan 12 Agustus mulai berlaku,https://app2.msci.com/eqb/pressreleases/archive/ir_dates.csv
+2026-09-15,2026-09-16,FOMC Meeting + Dot Plot,Fed/Global,Termasuk proyeksi ekonomi (dot plot),https://fedratecalc.com/fomc-meeting-schedule/
+2026-09-18,2026-09-18,FTSE Russell Indonesia Index Review (September),Index Rebalancing,"Tanggal perkiraan, BELUM diumumkan resmi - status review Indonesia masih ditangguhkan sejak Maret 2026, cek update FTSE Russell",https://www.heygotrade.com/en/news/ftse-hits-pause-on-indonesia-review-what-it-means-for-you
+2026-09-22,2026-09-23,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-10-01,2026-10-01,Rilis Inflasi September 2026 (BPS),Data Ekonomi ID,Perkiraan tanggal berdasarkan pola rilis awal bulan - cek bps.go.id,https://www.bps.go.id/en/pressrelease
+2026-10-20,2026-10-21,RDG Bank Indonesia (cakupan triwulanan & tahunan),Bank Indonesia,Keputusan BI Rate + evaluasi triwulanan & tahunan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-10-27,2026-10-28,FOMC Meeting,Fed/Global,Keputusan suku bunga The Fed + konferensi pers,https://fedratecalc.com/fomc-meeting-schedule/
+2026-11-02,2026-11-02,Rilis Inflasi Oktober 2026 (BPS),Data Ekonomi ID,Perkiraan tanggal berdasarkan pola rilis awal bulan - cek bps.go.id,https://www.bps.go.id/en/pressrelease
+2026-11-05,2026-11-05,Rilis PDB Kuartal III-2026 (BPS),Data Ekonomi ID,Perkiraan berdasarkan pola rilis kuartal sebelumnya - cek bps.go.id,https://www.bps.go.id/en/pressrelease
+2026-11-11,2026-11-11,Pengumuman MSCI Review + Evaluasi Status Indonesia,Index Rebalancing,"PENTING: MSCI menunda keputusan soal potensi downgrade status Indonesia (Emerging Market) ke review ini - berpotensi pengaruh besar ke arus dana asing",https://www.nst.com.my/amp/business/corporate/2026/06/1471218/msci-extends-indonesia-review-november-flags-downgrade-risk
+2026-11-17,2026-11-18,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx
+2026-12-01,2026-12-01,Rilis Inflasi November 2026 (BPS),Data Ekonomi ID,Perkiraan tanggal berdasarkan pola rilis awal bulan - cek bps.go.id,https://www.bps.go.id/en/pressrelease
+2026-12-01,2026-12-01,Efektif MSCI Index Review (November),Index Rebalancing,Termasuk hasil evaluasi status Indonesia,https://app2.msci.com/eqb/pressreleases/archive/ir_dates.csv
+2026-12-08,2026-12-09,FOMC Meeting + Dot Plot,Fed/Global,Termasuk proyeksi ekonomi (dot plot),https://fedratecalc.com/fomc-meeting-schedule/
+2026-12-15,2026-12-16,RDG Bank Indonesia,Bank Indonesia,Keputusan BI Rate bulanan,https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx

@@ -41,6 +41,13 @@ fundamental atau berita korporasi.
   contoh alur pakai — hidup di kode yang sama (`ara_screener/app.py`,
   fungsi `_render_panduan`), jadi otomatis nyambung tiap kali fitur di atas
   berubah, nggak kayak dokumen terpisah yang gampang basi.
+- **Kalender Event Penting**: expander di bagian atas halaman, daftar tanggal
+  yang bisa gerakin IHSG — FOMC, RDG Bank Indonesia, evaluasi/rebalancing
+  indeks (FTSE Russell, MSCI, LQ45/IDX30/IDX80 BEI), rilis data ekonomi
+  (inflasi, PDB), sampai pidato kenegaraan. Sengaja dirender SEBELUM data
+  harga di-fetch, jadi tetap muncul walau yfinance lagi error/rate-limit.
+  Datanya statis & dikurasi manual di `data/kalender_penting.csv` (kolom
+  `sumber` buat verifikasi) — lihat bagian "Memperbarui kalender" di bawah.
 - Aturan ARA/ARB otomatis mengikuti tier harga acuan sesuai aturan asimetris
   BEI (berlaku sejak 8 April 2025) — lihat `ara_screener/rules.py`.
 - Universe saham: LQ45 (cepat), semua saham IDX (~950, lebih lambat), atau
@@ -100,6 +107,24 @@ kolomnya kemungkinan besar masih kosong pagi-pagi, isinya lebih ke gap-up & stre
 dari hari sebelumnya. Jadwal GitHub Actions juga kadang meleset beberapa menit dari
 jam yang di-set (bukan real-time cron), dan workflow terjadwal otomatis nonaktif
 kalau repo nggak ada commit sama sekali selama 60 hari.
+
+## Memperbarui kalender event penting
+
+`data/kalender_penting.csv` (kolom: `tanggal_mulai, tanggal_selesai, event,
+kategori, catatan, sumber`) dikurasi manual, bukan dari API kalender ekonomi
+live. Beberapa baris (rilis inflasi BPS, review FTSE September) bertanda
+"perkiraan" di kolom `catatan` karena tanggal pastinya belum diumumkan resmi
+saat data ini disusun (~Agustus 2026). Perlu di-update berkala:
+
+- Jadwal FOMC: [federalreserve.gov](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm)
+- Jadwal RDG Bank Indonesia: [bi.go.id](https://www.bi.go.id)
+- Review FTSE Russell Indonesia: [research.ftserussell.com](https://research.ftserussell.com/products/index-notices/home)
+- Review MSCI: [msci.com/indexes/quarterly-index-review](https://www.msci.com/indexes/quarterly-index-review)
+- Evaluasi mayor indeks BEI (LQ45/IDX30/IDX80): pengumuman resmi di [idx.co.id](https://www.idx.co.id)
+- Rilis data ekonomi (inflasi, PDB): [bps.go.id/id/pressrelease](https://www.bps.go.id/id/pressrelease)
+
+Tinggal edit CSV-nya langsung (baris baru = event baru), commit & push — tab
+Kalender di dashboard otomatis kebaca ulang.
 
 ## Memperbarui daftar emiten
 

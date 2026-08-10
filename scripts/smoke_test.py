@@ -161,3 +161,19 @@ assert bt_summary["top_rate_pct"] > bt_summary["base_rate_pct"], (
 )
 
 print("OK: backtest assertion lolos.")
+
+
+kalender_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "kalender_penting.csv")
+kalender = pd.read_csv(kalender_path, parse_dates=["tanggal_mulai", "tanggal_selesai"])
+
+REQUIRED_KALENDER_COLS = {"tanggal_mulai", "tanggal_selesai", "event", "kategori", "catatan", "sumber"}
+assert REQUIRED_KALENDER_COLS.issubset(kalender.columns), kalender.columns.tolist()
+assert not kalender.empty, "kalender_penting.csv kosong"
+assert kalender["tanggal_mulai"].notna().all(), "ada tanggal_mulai yang gagal di-parse"
+assert kalender["tanggal_selesai"].notna().all(), "ada tanggal_selesai yang gagal di-parse"
+assert (kalender["tanggal_selesai"] >= kalender["tanggal_mulai"]).all(), (
+    "ada baris dengan tanggal_selesai sebelum tanggal_mulai"
+)
+assert kalender["sumber"].str.startswith("http").all(), "ada baris tanpa URL sumber yang valid"
+
+print(f"OK: kalender_penting.csv valid ({len(kalender)} event).")
