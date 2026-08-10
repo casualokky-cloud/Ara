@@ -69,7 +69,8 @@ def main() -> None:
         proximity_threshold = st.slider(
             "Ambang 'Mendekati ARA' (% dari batas ARA)", min_value=50, max_value=100, value=90
         )
-        score_threshold = st.slider("Ambang skor 'Potensi ARA'", min_value=0, max_value=100, value=50)
+        score_threshold = st.slider("Ambang skor 'Momentum Hari Ini'", min_value=0, max_value=100, value=50)
+        akumulasi_threshold = st.slider("Ambang skor 'Akumulasi'", min_value=0, max_value=100, value=50)
 
         st.divider()
         refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", use_container_width=True)
@@ -117,14 +118,22 @@ def main() -> None:
         st.warning("Tidak ada data harga yang berhasil diambil untuk universe ini.")
         return
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Saham dipantau", len(df))
     col2.metric("Mendekati ARA", int((df["progress_ke_ara_pct"] >= proximity_threshold).sum()))
     col3.metric("Sudah kena ARA hari ini", int((df["progress_ke_ara_pct"] >= 100).sum()))
+    col4.metric("Kandidat akumulasi", int((df["skor_akumulasi"] >= akumulasi_threshold).sum()))
 
-    tab1, tab2, tab3 = st.tabs(["\U0001F53A Mendekati ARA", "\U0001F52E Potensi ARA", "\U0001F4CB Semua data"])
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [
+            "\U0001F53A Mendekati ARA",
+            "\U0001F525 Momentum Hari Ini",
+            "\U0001F331 Akumulasi",
+            "\U0001F4CB Semua data",
+        ]
+    )
 
-    display_cols = {
+    momentum_cols = {
         "kode": "Kode",
         "nama": "Nama",
         "harga_terakhir": "Harga",
@@ -132,67 +141,111 @@ def main() -> None:
         "perubahan_pct": "% Chg",
         "harga_limit_ara": "Limit ARA",
         "progress_ke_ara_pct": "Progress ke ARA (%)",
+        "kekuatan_closing_pct": "Kekuatan Closing (%)",
         "volume_ratio": "Volume Ratio",
-        "skor_potensi": "Skor Potensi",
+        "skor_potensi": "Skor Momentum",
     }
+    akumulasi_cols = {
+        "kode": "Kode",
+        "nama": "Nama",
+        "harga_terakhir": "Harga",
+        "harga_20d_change_pct": "Chg 20D (%)",
+        "cmf_20": "CMF (20D)",
+        "obv_trend_20": "Tren OBV (hari volume)",
+        "volume_ratio": "Volume Ratio",
+        "skor_akumulasi": "Skor Akumulasi",
+    }
+
+    def _momentum_table(sub_df: pd.DataFrame):
+        return (
+            sub_df[list(momentum_cols)]
+            .rename(columns=momentum_cols)
+            .style.map(_highlight_progress, subset=["Progress ke ARA (%)"])
+            .format(
+                {
+                    "Harga": "{:,.0f}",
+                    "Prev Close": "{:,.0f}",
+                    "% Chg": "{:+.2f}%",
+                    "Limit ARA": "{:,.0f}",
+                    "Progress ke ARA (%)": "{:.1f}%",
+                    "Kekuatan Closing (%)": "{:.0f}%",
+                    "Volume Ratio": "{:.2f}x",
+                    "Skor Momentum": "{:.1f}",
+                }
+            )
+        )
 
     with tab1:
         near = df[df["progress_ke_ara_pct"] >= proximity_threshold].sort_values(
             "progress_ke_ara_pct", ascending=False
         )
         st.write(f"{len(near)} saham dengan harga >= {proximity_threshold}% dari batas ARA.")
+        st.caption(
+            "⚠️ Saham di sini SUDAH bergerak dekat/kena ARA hari ini — bukan sinyal buat masuk "
+            "duluan. 'Kekuatan Closing' (harga terakhir relatif ke range high-low hari ini) bisa "
+            "bantu menilai apakah demand-nya masih kuat sampai penutupan (relevan untuk tesis "
+            "'beli sore, jual pagi') atau cuma sempat nyentuh lalu rontok."
+        )
         if near.empty:
             st.info("Tidak ada saham yang memenuhi ambang ini saat ini.")
         else:
-            styled = near[list(display_cols)].rename(columns=display_cols).style.map(
-                _highlight_progress, subset=["Progress ke ARA (%)"]
-            ).format(
-                {
-                    "Harga": "{:,.0f}",
-                    "Prev Close": "{:,.0f}",
-                    "% Chg": "{:+.2f}%",
-                    "Limit ARA": "{:,.0f}",
-                    "Progress ke ARA (%)": "{:.1f}%",
-                    "Volume Ratio": "{:.2f}x",
-                    "Skor Potensi": "{:.1f}",
-                }
-            )
-            st.dataframe(styled, use_container_width=True, hide_index=True)
+            st.dataframe(_momentum_table(near), use_container_width=True, hide_index=True)
 
     with tab2:
         potential = df[df["skor_potensi"] >= score_threshold].sort_values(
             "skor_potensi", ascending=False
         )
-        st.write(f"{len(potential)} saham dengan skor potensi >= {score_threshold}.")
+        st.write(f"{len(potential)} saham dengan skor momentum >= {score_threshold}.")
         st.caption(
             "Skor gabungan dari: kedekatan ke ARA, lonjakan volume vs rata-rata 20 hari, "
-            "gap up saat open, dan jumlah hari beruntun naik. Bukan prediksi pasti."
+            "gap up saat open, dan jumlah hari beruntun naik — menandai saham yang LAGI panas "
+            "HARI INI, bukan prediksi saham yang akan ARA. Buat cari kandidat SEBELUM harga "
+            "bergerak, cek tab Akumulasi."
         )
         if potential.empty:
             st.info("Tidak ada saham yang memenuhi ambang skor ini saat ini.")
         else:
-            styled = potential[list(display_cols)].rename(columns=display_cols).style.map(
-                _highlight_progress, subset=["Progress ke ARA (%)"]
-            ).format(
-                {
-                    "Harga": "{:,.0f}",
-                    "Prev Close": "{:,.0f}",
-                    "% Chg": "{:+.2f}%",
-                    "Limit ARA": "{:,.0f}",
-                    "Progress ke ARA (%)": "{:.1f}%",
-                    "Volume Ratio": "{:.2f}x",
-                    "Skor Potensi": "{:.1f}",
-                }
+            st.dataframe(_momentum_table(potential), use_container_width=True, hide_index=True)
+
+    with tab3:
+        akumulasi = df[df["skor_akumulasi"] >= akumulasi_threshold].sort_values(
+            "skor_akumulasi", ascending=False
+        )
+        st.write(f"{len(akumulasi)} saham dengan skor akumulasi >= {akumulasi_threshold}.")
+        st.caption(
+            "Skor dari indikator teknikal Chaikin Money Flow (tekanan beli/jual 20 hari) dan tren "
+            "OBV, dengan bonus kalau harga belum banyak bergerak (belum breakout). Menandai saham "
+            "yang mungkin lagi 'dikumpulin' diam-diam — kandidat early-entry, kebalikan dari tab "
+            "Mendekati ARA. INI BUKAN bandarmology (data broker net buy); murni dari harga & "
+            "volume historis, jadi tetap bisa salah/false positive."
+        )
+        if akumulasi.empty:
+            st.info("Tidak ada saham yang memenuhi ambang skor ini saat ini.")
+        else:
+            styled = (
+                akumulasi[list(akumulasi_cols)]
+                .rename(columns=akumulasi_cols)
+                .style.format(
+                    {
+                        "Harga": "{:,.0f}",
+                        "Chg 20D (%)": "{:+.1f}%",
+                        "CMF (20D)": "{:+.2f}",
+                        "Tren OBV (hari volume)": "{:+.1f}",
+                        "Volume Ratio": "{:.2f}x",
+                        "Skor Akumulasi": "{:.1f}",
+                    }
+                )
             )
             st.dataframe(styled, use_container_width=True, hide_index=True)
 
-    with tab3:
+    with tab4:
         search = st.text_input("Cari kode saham")
         table = df.sort_values("skor_potensi", ascending=False)
         if search:
             table = table[table["kode"].str.contains(search.upper())]
+        all_cols = {**momentum_cols, **{k: v for k, v in akumulasi_cols.items() if k not in momentum_cols}}
         st.dataframe(
-            table[list(display_cols)].rename(columns=display_cols),
+            table[list(all_cols)].rename(columns=all_cols),
             use_container_width=True,
             hide_index=True,
         )
@@ -202,7 +255,9 @@ def main() -> None:
         "⚠️ Bukan nasihat keuangan. Batas ARA dihitung dari aturan asimetris BEI "
         "(berlaku 8 Apr 2025: ARA 35%/25%/20% berdasarkan harga acuan, ARB 15%) tanpa "
         "pembulatan fraksi harga resmi, jadi bisa sedikit berbeda dari sistem perdagangan riil. "
-        "Data harga: Yahoo Finance (bisa delay). Daftar emiten: "
+        "Skor Momentum & Akumulasi murni heuristik rule-based dari data harga/volume — belum "
+        "divalidasi/backtest terhadap histori ARA riil, dan Akumulasi bukan data bandarmology "
+        "(broker net buy). Data harga: Yahoo Finance (bisa delay). Daftar emiten: "
         "[wildangunawan/Dataset-Saham-IDX](https://github.com/wildangunawan/Dataset-Saham-IDX) (CC BY-NC 4.0)."
     )
 
