@@ -15,6 +15,7 @@ from ara_screener import accumulation, backtest, data as data_mod
 DATA_DIR = os.path.join(_REPO_ROOT, "data")
 ALL_TICKERS_PATH = os.path.join(DATA_DIR, "idx_tickers.csv")
 LQ45_PATH = os.path.join(DATA_DIR, "idx_lq45.csv")
+KALENDER_PATH = os.path.join(DATA_DIR, "kalender_penting.csv")
 
 BOARD_OPTIONS = ["Utama", "Pengembangan", "Pemantauan Khusus", "Akselerasi", "Ekonomi Baru"]
 
@@ -32,6 +33,12 @@ st.set_page_config(page_title="ARA Screener", page_icon="\U0001F4C8", layout="wi
 @st.cache_data(ttl=3600)
 def _load_universe(path: str) -> pd.DataFrame:
     return data_mod.load_ticker_universe(path)
+
+
+@st.cache_data(ttl=3600)
+def _load_kalender(path: str) -> pd.DataFrame:
+    df = pd.read_csv(path, parse_dates=["tanggal_mulai", "tanggal_selesai"])
+    return df.sort_values("tanggal_mulai").reset_index(drop=True)
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -76,7 +83,10 @@ def _render_panduan() -> None:
             "| 🔥 Momentum Hari Ini | Saham yang lagi 'panas' hari ini (skor gabungan). |\n"
             "| 🌱 Akumulasi | Saham yang mungkin lagi 'dikumpulin' diam-diam, SEBELUM harga bergerak. |\n"
             "| 📋 Semua data | Semua saham yang dipantau, bisa di-search. |\n"
-            "| 🧪 Backtest | Uji beneran: apakah skor Akumulasi tinggi historisnya lebih sering diikuti ARA besoknya, dibanding pilih saham random? |"
+            "| 🧪 Backtest | Uji beneran: apakah skor Akumulasi tinggi historisnya lebih sering diikuti ARA besoknya, dibanding pilih saham random? |\n\n"
+            "Di luar tab-tab itu, ada juga expander **🗓️ Kalender Event Penting** di bagian atas "
+            "halaman (di atas sini) — daftar tanggal yang bisa gerakin IHSG: FOMC, RDG BI, "
+            "rebalancing indeks (FTSE/MSCI/BEI), rilis data ekonomi, sampai pidato kenegaraan."
         )
 
     with st.expander("Pengaturan di sidebar"):
@@ -170,12 +180,95 @@ def _render_panduan() -> None:
         )
 
 
+_BULAN_ID = {
+    1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mei", 6: "Jun",
+    7: "Jul", 8: "Agu", 9: "Sep", 10: "Okt", 11: "Nov", 12: "Des",
+}
+
+
+def _format_date_range(row: pd.Series) -> str:
+    start, end = row["tanggal_mulai"], row["tanggal_selesai"]
+    if start.date() == end.date():
+        return f"{start.day} {_BULAN_ID[start.month]} {start.year}"
+    if (start.month, start.year) == (end.month, end.year):
+        return f"{start.day}-{end.day} {_BULAN_ID[start.month]} {start.year}"
+    return f"{start.day} {_BULAN_ID[start.month]} - {end.day} {_BULAN_ID[end.month]} {end.year}"
+
+
+def _render_kalender() -> None:
+    """Kalender event yang bisa gerakin IHSG: FOMC, RDG BI, index rebalancing (FTSE/MSCI/BEI),
+    rilis data ekonomi, sampai pidato kenegaraan. Data statis di data/kalender_penting.csv,
+    dikurasi manual & perlu diperbarui berkala -- lihat kolom Sumber buat verifikasi."""
+    st.caption(
+        "Tanggal-tanggal yang berpotensi menggerakkan IHSG: keputusan suku bunga (The Fed & "
+        "BI), evaluasi/rebalancing indeks (FTSE, MSCI, BEI), rilis data ekonomi, dan pidato "
+        "kenegaraan. Data dikurasi manual, sebagian bertanda 'perkiraan' — selalu cek kolom "
+        "Sumber buat verifikasi sebelum dipakai."
+    )
+
+    df = _load_kalender(KALENDER_PATH).copy()
+    today = pd.Timestamp.now().normalize()
+    df["hari_lagi"] = (df["tanggal_mulai"] - today).dt.days
+    df["berlangsung"] = (df["tanggal_mulai"] <= today) & (today <= df["tanggal_selesai"])
+    df["sudah_lewat"] = df["tanggal_selesai"] < today
+
+    col1, col2 = st.columns([1, 2])
+    hide_past = col1.checkbox("Sembunyikan yang sudah lewat", value=True, key="kalender_hide_past")
+    kategori_opsi = sorted(df["kategori"].unique().tolist())
+    kategori_filter = col2.multiselect(
+        "Filter kategori", kategori_opsi, default=kategori_opsi, key="kalender_kategori"
+    )
+
+    view = df[df["kategori"].isin(kategori_filter)]
+    if hide_past:
+        view = view[~view["sudah_lewat"]]
+    view = view.sort_values("tanggal_mulai")
+
+    if view.empty:
+        st.info("Nggak ada event yang cocok dengan filter ini.")
+        return
+
+    view = view.copy()
+    view["Tanggal"] = view.apply(_format_date_range, axis=1)
+    display_cols = {
+        "Tanggal": "Tanggal",
+        "event": "Event",
+        "kategori": "Kategori",
+        "catatan": "Catatan",
+        "sumber": "Sumber",
+    }
+    display_df = view[list(display_cols)].rename(columns=display_cols)
+    is_live = view["berlangsung"]
+    is_soon = (~is_live) & view["hari_lagi"].between(0, 7)
+
+    def _row_style(row: pd.Series) -> list[str]:
+        idx = row.name
+        if is_live.loc[idx]:
+            return ["background-color: #7f1d1d; color: white"] * len(row)
+        if is_soon.loc[idx]:
+            return ["background-color: #78350f; color: white"] * len(row)
+        return [""] * len(row)
+
+    st.caption("🟥 lagi berlangsung &nbsp;&nbsp; 🟧 ≤7 hari lagi")
+    st.dataframe(
+        display_df.style.apply(_row_style, axis=1),
+        width='stretch',
+        hide_index=True,
+        column_config={
+            "Sumber": st.column_config.LinkColumn("Sumber", display_text="🔗"),
+        },
+    )
+
+
 def main() -> None:
     st.title("ARA Screener \U0001F4C8")
     st.caption(
         "Screener saham yang mendekati / berpotensi Auto Reject Atas (ARA) di BEI. "
         "Data harga dari Yahoo Finance (bisa delay), bukan rekomendasi investasi."
     )
+
+    with st.expander("\U0001F5D3️ Kalender Event Penting (bisa gerakin IHSG)"):
+        _render_kalender()
 
     with st.sidebar:
         st.header("Pengaturan")
@@ -209,7 +302,7 @@ def main() -> None:
         )
 
         st.divider()
-        refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", use_container_width=True)
+        refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", width='stretch')
 
     if universe_choice == "Upload CSV sendiri":
         if uploaded_df is None:
@@ -329,7 +422,7 @@ def main() -> None:
         if near.empty:
             st.info("Tidak ada saham yang memenuhi ambang ini saat ini.")
         else:
-            st.dataframe(_momentum_table(near), use_container_width=True, hide_index=True)
+            st.dataframe(_momentum_table(near), width='stretch', hide_index=True)
 
     with tab2:
         potential = df[df["skor_potensi"] >= score_threshold].sort_values(
@@ -345,7 +438,7 @@ def main() -> None:
         if potential.empty:
             st.info("Tidak ada saham yang memenuhi ambang skor ini saat ini.")
         else:
-            st.dataframe(_momentum_table(potential), use_container_width=True, hide_index=True)
+            st.dataframe(_momentum_table(potential), width='stretch', hide_index=True)
 
     with tab3:
         n_illiquid = int((~df["akumulasi_likuid"]).sum())
@@ -392,7 +485,7 @@ def main() -> None:
                     }
                 )
             )
-            st.dataframe(styled, use_container_width=True, hide_index=True)
+            st.dataframe(styled, width='stretch', hide_index=True)
 
     with tab4:
         search = st.text_input("Cari kode saham")
@@ -402,7 +495,7 @@ def main() -> None:
         all_cols = {**momentum_cols, **{k: v for k, v in akumulasi_cols.items() if k not in momentum_cols}}
         st.dataframe(
             table[list(all_cols)].rename(columns=all_cols),
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
 
