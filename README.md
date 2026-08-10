@@ -18,10 +18,14 @@ fundamental atau berita korporasi.
   (lihat `ara_screener/scoring.py`). Ini menandai saham yang **sedang**
   bergerak hari itu — kalau proximity-nya sudah tinggi, itu artinya harga
   SUDAH bergerak duluan, bukan sinyal untuk masuk lebih awal.
-- **Akumulasi**: skor 0-100 dari indikator teknikal Chaikin Money Flow (CMF)
-  dan tren OBV, dengan bonus kalau harga belum banyak bergerak (belum
-  breakout) — lihat `ara_screener/accumulation.py`. Ini kebalikan dari tab
-  Momentum: mencari kandidat SEBELUM harga bergerak, bukan sesudahnya.
+- **Akumulasi**: dari indikator teknikal Chaikin Money Flow (CMF) dan tren
+  OBV, dengan bonus kalau harga belum banyak bergerak (belum breakout) —
+  lihat `ara_screener/accumulation.py`. Ini kebalikan dari tab Momentum:
+  mencari kandidat SEBELUM harga bergerak, bukan sesudahnya. Skornya
+  ditampilkan sebagai **persentil** (0-100) relatif ke universe yang lagi
+  dipantau — bukan skor absolut — supaya threshold-nya tetap diskriminatif
+  walau lagi market-wide uptrend (persentil 90 = 10% paling menonjol hari
+  itu, dari universe/papan pencatatan yang kamu pilih).
 - Aturan ARA/ARB otomatis mengikuti tier harga acuan sesuai aturan asimetris
   BEI (berlaku sejak 8 April 2025) — lihat `ara_screener/rules.py`.
 - Universe saham: LQ45 (cepat), semua saham IDX (~950, lebih lambat), atau

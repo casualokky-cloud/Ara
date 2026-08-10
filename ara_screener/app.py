@@ -75,7 +75,9 @@ def main() -> None:
             "Ambang 'Mendekati ARA' (% dari batas ARA)", min_value=50, max_value=100, value=90
         )
         score_threshold = st.slider("Ambang skor 'Momentum Hari Ini'", min_value=0, max_value=100, value=50)
-        akumulasi_threshold = st.slider("Ambang skor 'Akumulasi'", min_value=0, max_value=100, value=50)
+        akumulasi_threshold = st.slider(
+            "Ambang persentil 'Akumulasi' (mis. 80 = top 20%)", min_value=0, max_value=100, value=80
+        )
 
         st.divider()
         refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", use_container_width=True)
@@ -158,7 +160,7 @@ def main() -> None:
         "cmf_20": "CMF (20D)",
         "obv_trend_20": "Tren OBV (hari volume)",
         "volume_ratio": "Volume Ratio",
-        "skor_akumulasi": "Skor Akumulasi",
+        "skor_akumulasi": "Persentil Akumulasi",
     }
 
     def _momentum_table(sub_df: pd.DataFrame):
@@ -216,16 +218,23 @@ def main() -> None:
         akumulasi = df[df["skor_akumulasi"] >= akumulasi_threshold].sort_values(
             "skor_akumulasi", ascending=False
         )
-        st.write(f"{len(akumulasi)} saham dengan skor akumulasi >= {akumulasi_threshold}.")
+        st.write(
+            f"{len(akumulasi)} saham masuk persentil atas {100 - akumulasi_threshold}% "
+            f"(dari {len(df)} saham yang dipantau)."
+        )
         st.caption(
             "Skor dari indikator teknikal Chaikin Money Flow (tekanan beli/jual 20 hari) dan tren "
-            "OBV, dengan bonus kalau harga belum banyak bergerak (belum breakout). Menandai saham "
-            "yang mungkin lagi 'dikumpulin' diam-diam — kandidat early-entry, kebalikan dari tab "
-            "Mendekati ARA. INI BUKAN bandarmology (data broker net buy); murni dari harga & "
-            "volume historis, jadi tetap bisa salah/false positive."
+            "OBV, dengan bonus kalau harga belum banyak bergerak (belum breakout) — lalu "
+            "**diurutkan sebagai persentil** relatif ke saham lain yang lagi dipantau saat ini, "
+            "bukan skor absolut. Ini supaya nggak semua saham 'lolos' bareng-bareng pas market "
+            "lagi hijau semua; persentil 90 berarti termasuk 10% paling menonjol hari itu. "
+            "Menandai saham yang mungkin lagi 'dikumpulin' diam-diam — kandidat early-entry, "
+            "kebalikan dari tab Mendekati ARA. INI BUKAN bandarmology (data broker net buy); murni "
+            "dari harga & volume historis, jadi tetap bisa salah/false positive, dan hasilnya "
+            "berubah tergantung universe/papan pencatatan yang kamu pilih."
         )
         if akumulasi.empty:
-            st.info("Tidak ada saham yang memenuhi ambang skor ini saat ini.")
+            st.info("Tidak ada saham yang memenuhi ambang persentil ini saat ini.")
         else:
             styled = (
                 akumulasi[list(akumulasi_cols)]
@@ -237,7 +246,7 @@ def main() -> None:
                         "CMF (20D)": "{:+.2f}",
                         "Tren OBV (hari volume)": "{:+.1f}",
                         "Volume Ratio": "{:.2f}x",
-                        "Skor Akumulasi": "{:.1f}",
+                        "Persentil Akumulasi": "{:.0f}",
                     }
                 )
             )

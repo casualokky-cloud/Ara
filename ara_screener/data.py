@@ -135,7 +135,17 @@ def build_summary(price_history: dict[str, pd.DataFrame], universe: pd.DataFrame
             "harga_20d_change_pct": harga_20d_change_pct,
         }
         row["skor_potensi"] = scoring.potential_score(row)
-        row["skor_akumulasi"] = accumulation.accumulation_score(cmf_20, obv_trend_20, harga_20d_change_pct)
+        row["skor_akumulasi_mentah"] = accumulation.accumulation_score(
+            cmf_20, obv_trend_20, harga_20d_change_pct
+        )
         rows.append(row)
 
-    return pd.DataFrame(rows)
+    result = pd.DataFrame(rows)
+    if not result.empty:
+        # Skor akumulasi mentah gampang "terinflasi" bareng-bareng pas market lagi uptrend
+        # (banyak saham kebagian CMF/OBV positif sekaligus), jadi ambang skor absolut jadi
+        # nggak diskriminatif. Ranking persentil relatif ke universe yang lagi dipantau bikin
+        # cuma saham yang beneran menonjol HARI ITU yang dapat skor tinggi, apa pun kondisi
+        # pasarnya secara umum.
+        result["skor_akumulasi"] = result["skor_akumulasi_mentah"].rank(pct=True) * 100
+    return result
