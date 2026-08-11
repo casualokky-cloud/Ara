@@ -1,5 +1,7 @@
 """Smoke test tanpa akses internet: pakai data harga palsu untuk cek pipeline."""
 
+import datetime as _dt
+import importlib.util
 import sys
 import os
 
@@ -177,3 +179,25 @@ assert (kalender["tanggal_selesai"] >= kalender["tanggal_mulai"]).all(), (
 assert kalender["sumber"].str.startswith("http").all(), "ada baris tanpa URL sumber yang valid"
 
 print(f"OK: kalender_penting.csv valid ({len(kalender)} event).")
+
+
+app_spec = importlib.util.spec_from_file_location(
+    "ara_screener_app", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ara_screener", "app.py")
+)
+app_module = importlib.util.module_from_spec(app_spec)
+app_spec.loader.exec_module(app_module)
+
+_key = app_module._trading_day_key
+_WIB = app_module.WIB
+
+_before_cutoff = _dt.datetime(2026, 8, 10, 8, 29, tzinfo=_WIB)
+_at_cutoff = _dt.datetime(2026, 8, 10, 8, 30, tzinfo=_WIB)
+_late_same_day = _dt.datetime(2026, 8, 10, 23, 59, tzinfo=_WIB)
+_next_midnight = _dt.datetime(2026, 8, 11, 0, 0, tzinfo=_WIB)
+
+assert _key(_before_cutoff) == "2026-08-09", _key(_before_cutoff)
+assert _key(_at_cutoff) == "2026-08-10", _key(_at_cutoff)
+assert _key(_late_same_day) == "2026-08-10", _key(_late_same_day)
+assert _key(_next_midnight) == "2026-08-10", _key(_next_midnight)
+
+print("OK: _trading_day_key (reset cache screener jam 08:30 WIB) lolos semua assertion.")
