@@ -10,6 +10,14 @@ fundamental atau berita korporasi.
 
 ## Fitur
 
+- **Auto-refresh harian jam 08:30 WIB**: cache data screener (`_load_summary`)
+  otomatis "lupa" data hari sebelumnya begitu ada yang buka dashboard setelah
+  jam 08:30 WIB — nggak nunggu TTL cache lewat, nggak perlu klik Refresh
+  manual, dan nggak butuh reboot app atau scheduler eksternal. Diimplementasi
+  murni sebagai bagian dari cache key (`_trading_day_key()` di `app.py`), jadi
+  jalan otomatis di proses Streamlit yang sama, kapan pun ada yang mengakses
+  setelah jam segitu. Ubah jamnya lewat `DAILY_RESET_HOUR`/`DAILY_RESET_MINUTE`
+  di `ara_screener/app.py` kalau perlu.
 - **Mendekati ARA**: saham yang harganya sudah di atas ambang tertentu
   (misal 90%) dari batas ARA hari ini. Termasuk kolom "Kekuatan Closing"
   untuk menilai apakah demand-nya masih kuat di penutupan.

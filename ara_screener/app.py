@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import os
 import sys
 
@@ -18,6 +19,22 @@ LQ45_PATH = os.path.join(DATA_DIR, "idx_lq45.csv")
 KALENDER_PATH = os.path.join(DATA_DIR, "kalender_penting.csv")
 
 BOARD_OPTIONS = ["Utama", "Pengembangan", "Pemantauan Khusus", "Akselerasi", "Ekonomi Baru"]
+
+WIB = dt.timezone(dt.timedelta(hours=7))
+DAILY_RESET_HOUR, DAILY_RESET_MINUTE = 8, 30  # jam mulai "hari baru" buat cache screener
+
+
+def _trading_day_key(now: dt.datetime | None = None) -> str:
+    """Tanggal efektif yang cuma maju sekali per hari, tepat jam 08:30 WIB.
+
+    Dipakai sebagai bagian dari cache key `_load_summary` biar tab-tab screener otomatis
+    fetch ulang dari nol begitu ada yang buka dashboard setelah jam segitu -- bukan nunggu
+    TTL cache lewat, dan nggak butuh reboot app atau scheduler eksternal. Sebelum jam
+    08:30, masih dianggap "hari kemarin" (cache lama, kalau masih ada, tetap kepakai)."""
+    now = now or dt.datetime.now(WIB)
+    cutoff = now.replace(hour=DAILY_RESET_HOUR, minute=DAILY_RESET_MINUTE, second=0, microsecond=0)
+    effective_date = now.date() if now >= cutoff else (now - dt.timedelta(days=1)).date()
+    return effective_date.isoformat()
 
 # Streamlit's st.cache_data hashes _load_summary's OWN source code + args, not the code of
 # data_mod.build_summary/accumulation.py that it calls internally. So editing those modules
@@ -42,7 +59,9 @@ def _load_kalender(path: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def _load_summary(kodes: tuple[str, ...], universe_key: str, schema_version: str) -> pd.DataFrame:
+def _load_summary(
+    kodes: tuple[str, ...], universe_key: str, schema_version: str, trading_day: str
+) -> pd.DataFrame:
     universe = _load_universe(ALL_TICKERS_PATH if universe_key == "all" else LQ45_PATH)
     history = data_mod.fetch_price_history(list(kodes))
     return data_mod.build_summary(history, universe)
@@ -98,7 +117,11 @@ def _render_panduan() -> None:
             "| Ambang 'Mendekati ARA' | Batas minimal progress ke ARA buat masuk tab 1. |\n"
             "| Ambang skor 'Momentum Hari Ini' | Batas minimal skor buat masuk tab 2. |\n"
             "| Ambang persentil 'Akumulasi' | Mis. 80 = tampilin cuma 20% saham paling menonjol. |\n"
-            "| Muat / Refresh data | Ambil data harga terbaru & buang cache lama. |\n\n"
+            "| Muat / Refresh data | Ambil data harga terbaru & buang cache lama, kapan aja. |\n\n"
+            f"Selain itu, data screener otomatis full-refresh sendiri tiap hari jam "
+            f"**{DAILY_RESET_HOUR:02d}:{DAILY_RESET_MINUTE:02d} WIB** — begitu ada yang buka "
+            "dashboard setelah jam segitu, data kemarin otomatis dibuang dan diambil ulang "
+            "dari nol, nggak perlu diklik manual.\n\n"
             "Tips: pertama kali coba, pakai universe **LQ45** dulu biar cepat, baru pindah ke "
             "'Semua saham IDX' kalau mau eksplor lebih luas."
         )
@@ -326,7 +349,10 @@ def main() -> None:
         st.warning("Tidak ada saham yang cocok dengan filter papan pencatatan.")
         return
 
-    st.caption(f"Memantau {len(kodes)} saham.")
+    st.caption(
+        f"Memantau {len(kodes)} saham. Data efektif hari {_trading_day_key()} — otomatis "
+        "full-refresh tiap hari jam 08:30 WIB (bukan cuma nunggu cache lama expired)."
+    )
 
     if refresh:
         _load_summary.clear()
@@ -334,7 +360,10 @@ def main() -> None:
     try:
         with st.spinner(f"Mengambil data harga untuk {len(kodes)} saham..."):
             df = _load_summary(
-                kodes, universe_key if universe_key != "custom" else "all", SCHEMA_VERSION
+                kodes,
+                universe_key if universe_key != "custom" else "all",
+                SCHEMA_VERSION,
+                _trading_day_key(),
             )
             if universe_key == "custom":
                 df = df[df["kode"].isin(kodes)]
