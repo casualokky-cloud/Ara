@@ -42,7 +42,7 @@ def _trading_day_key(now: dt.datetime | None = None) -> str:
 # columns from before the edit) being served after a redeploy, even a full reboot, until the
 # TTL expires. Bump this whenever build_summary's output columns change, so it's part of the
 # cache key and old entries can never match.
-SCHEMA_VERSION = "3"
+SCHEMA_VERSION = "4"
 
 st.set_page_config(page_title="ARA Screener", page_icon="\U0001F4C8", layout="wide")
 
