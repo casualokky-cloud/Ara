@@ -120,6 +120,7 @@ def build_summary(price_history: dict[str, pd.DataFrame], universe: pd.DataFrame
             "kode": kode,
             "nama": names.get(kode, ""),
             "papan": boards.get(kode, ""),
+            "tanggal_data": df.index[-1].date(),
             "prev_close": prev_close,
             "harga_terakhir": last_price,
             "perubahan_pct": change_pct * 100,
@@ -145,6 +146,16 @@ def build_summary(price_history: dict[str, pd.DataFrame], universe: pd.DataFrame
 
     result = pd.DataFrame(rows)
     if not result.empty:
+        # yfinance nggak update semua ticker bersamaan -- sebagian saham bisa masih nyangkut
+        # di bar kemarin sementara yang lain sudah dapat bar hari ini. Kalau dibiarkan,
+        # df.iloc[-1] tiap saham diam-diam merujuk ke TANGGAL YANG BEDA-BEDA, jadi tabelnya
+        # kelihatan "kecampur" data kemarin & hari ini tanpa ada penanda apa pun. Tanggal
+        # bar terbanyak di seluruh universe dianggap sebagai hari perdagangan acuan; saham
+        # yang bar terakhirnya beda dari itu ditandai `data_terkini=False` biar bisa
+        # difilter di level tampilan (lihat app.py).
+        tanggal_acuan = result["tanggal_data"].mode().iloc[0]
+        result["data_terkini"] = result["tanggal_data"] == tanggal_acuan
+
         # Saham dengan volume hari ini jauh di bawah rata-rata 20 hari dikeluarkan dari
         # ranking sama sekali — di volume setipis itu, CMF/OBV gampang disesatkan segelintir
         # transaksi kecil dan nggak merepresentasikan tekanan beli/jual yang sebenarnya

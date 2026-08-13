@@ -10,6 +10,14 @@ fundamental atau berita korporasi.
 
 ## Fitur
 
+- **Filter data konsisten per-tanggal**: yfinance nggak update semua ~950
+  ticker bersamaan — sebagian saham bisa masih nyangkut di bar kemarin
+  sementara yang lain sudah dapat bar hari ini. `build_summary` (`data.py`)
+  mencatat tanggal bar terakhir tiap saham (`tanggal_data`), menentukan
+  tanggal mayoritas sebagai acuan, lalu menandai saham yang beda
+  (`data_terkini=False`). Dashboard otomatis menyembunyikan saham yang
+  ketandai itu dari SEMUA tab, biar nggak ada tabel yang isinya kecampur
+  data dua hari berbeda tanpa penanda apa pun.
 - **Auto-refresh harian jam 08:30 WIB**: cache data screener (`_load_summary`)
   otomatis "lupa" data hari sebelumnya begitu ada yang buka dashboard setelah
   jam 08:30 WIB — nggak nunggu TTL cache lewat, nggak perlu klik Refresh

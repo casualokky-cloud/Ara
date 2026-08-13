@@ -17,8 +17,8 @@ from ara_screener import rules
 np.random.seed(0)
 
 
-def fake_history(prev_close: float, last_price: float, volume: float) -> pd.DataFrame:
-    dates = pd.date_range("2026-06-01", periods=25, freq="B")
+def fake_history(prev_close: float, last_price: float, volume: float, lag_days: int = 0) -> pd.DataFrame:
+    dates = pd.date_range("2026-06-01", periods=25, freq="B") - pd.tseries.offsets.BDay(lag_days)
     closes = np.linspace(prev_close * 0.85, prev_close, len(dates) - 1)
     closes = np.append(closes, last_price)
     opens = closes * 0.995
@@ -60,9 +60,9 @@ def fake_accumulation_history(quiet: bool, thin_last_day: bool = False) -> pd.Da
 
 universe = pd.DataFrame(
     {
-        "kode": ["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF"],
-        "nama": ["Test A", "Test B", "Test C", "Test D", "Test E", "Test F"],
-        "papan": ["Utama"] * 6,
+        "kode": ["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "NNNN"],
+        "nama": ["Test A", "Test B", "Test C", "Test D", "Test E", "Test F", "Test N"],
+        "papan": ["Utama"] * 7,
     }
 )
 
@@ -73,6 +73,7 @@ history = {
     "DDDD": fake_accumulation_history(quiet=True),  # pola akumulasi
     "EEEE": fake_accumulation_history(quiet=False),  # kontrol: bukan akumulasi
     "FFFF": fake_accumulation_history(quiet=True, thin_last_day=True),  # kasus MKTR: pola bagus, volume tipis
+    "NNNN": fake_history(prev_close=300, last_price=310, volume=1_000_000, lag_days=1),  # yfinance belum update
 }
 
 summary = data_mod.build_summary(history, universe)
@@ -101,6 +102,19 @@ assert not row_f["akumulasi_likuid"], "FFFF (volume tipis) harusnya ditandai ngg
 assert pd.isna(row_f["skor_akumulasi"]), (
     f"FFFF (kasus MKTR: pola bagus tapi volume tipis) harus dikeluarkan dari ranking "
     f"(skor_akumulasi NaN), malah dapet {row_f['skor_akumulasi']}"
+)
+
+row_a = summary[summary["kode"] == "AAAA"].iloc[0]
+row_n = summary[summary["kode"] == "NNNN"].iloc[0]
+assert row_a["data_terkini"], "AAAA (mayoritas) harusnya data_terkini=True"
+assert not row_n["data_terkini"], (
+    "NNNN (bar terakhirnya 1 hari lebih tua, simulasi yfinance belum update) "
+    "harusnya ketandai data_terkini=False"
+)
+assert row_n["tanggal_data"] != row_a["tanggal_data"]
+print(
+    f"OK: filter data_terkini nangkep NNNN sebagai stale "
+    f"(tanggal_data={row_n['tanggal_data']} vs acuan={row_a['tanggal_data']})."
 )
 
 print("\nOK: semua assertion lolos.")

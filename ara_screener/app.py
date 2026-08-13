@@ -42,7 +42,7 @@ def _trading_day_key(now: dt.datetime | None = None) -> str:
 # columns from before the edit) being served after a redeploy, even a full reboot, until the
 # TTL expires. Bump this whenever build_summary's output columns change, so it's part of the
 # cache key and old entries can never match.
-SCHEMA_VERSION = "4"
+SCHEMA_VERSION = "5"
 
 st.set_page_config(page_title="ARA Screener", page_icon="\U0001F4C8", layout="wide")
 
@@ -191,7 +191,10 @@ def _render_panduan() -> None:
 
     with st.expander("Batasan yang wajib diingat"):
         st.markdown(
-            "- Data harga dari Yahoo Finance biasanya delay beberapa menit.\n"
+            "- Data harga dari Yahoo Finance biasanya delay beberapa menit, dan nggak semua "
+            "saham ke-update bersamaan — dashboard otomatis nyembunyiin saham yang bar "
+            "terakhirnya masih 'nyangkut' di tanggal berbeda dari mayoritas (lihat caption "
+            "'Data harga per ...' di atas tab-tab), biar nggak kecampur data kemarin & hari ini.\n"
             "- Harga Limit ARA dihitung dari persentase doang, TANPA pembulatan ke fraksi harga "
             "(tick size) resmi BEI — jangan dipakai buat pasang order.\n"
             "- Semua skor (Momentum & Akumulasi) adalah heuristik rule-based dari harga/volume "
@@ -377,6 +380,26 @@ def main() -> None:
     if df.empty:
         st.warning("Tidak ada data harga yang berhasil diambil untuk universe ini.")
         return
+
+    n_stale = int((~df["data_terkini"]).sum())
+    tanggal_acuan = df.loc[df["data_terkini"], "tanggal_data"].iloc[0] if (df["data_terkini"]).any() else None
+    df = df[df["data_terkini"]].copy()
+
+    if df.empty:
+        st.warning(
+            "Semua data yang berhasil diambil ternyata bukan dari hari perdagangan yang sama "
+            "(kemungkinan Yahoo Finance belum update). Coba refresh lagi beberapa saat lagi."
+        )
+        return
+
+    if tanggal_acuan is not None:
+        st.caption(f"📅 Data harga per **{tanggal_acuan.strftime('%d %b %Y')}**.")
+    if n_stale:
+        st.caption(
+            f"⚠️ {n_stale} saham disembunyikan dari semua tab karena data terakhirnya BUKAN dari "
+            f"tanggal di atas (kemungkinan Yahoo Finance belum update saham itu) — dulu ini malah "
+            "ikut ditampilkan seolah-olah data hari ini, bikin tabel kelihatan 'kecampur'."
+        )
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Saham dipantau", len(df))
