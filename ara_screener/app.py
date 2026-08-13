@@ -10,6 +10,7 @@ if _REPO_ROOT not in sys.path:
 
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 from ara_screener import accumulation, backtest, data as data_mod
 
@@ -22,6 +23,7 @@ BOARD_OPTIONS = ["Utama", "Pengembangan", "Pemantauan Khusus", "Akselerasi", "Ek
 
 WIB = dt.timezone(dt.timedelta(hours=7))
 DAILY_RESET_HOUR, DAILY_RESET_MINUTE = 8, 30  # jam mulai "hari baru" buat cache screener
+AUTOREFRESH_INTERVAL_MS = 5 * 60 * 1000  # cek tiap 5 menit -- selaras sama TTL _load_summary
 
 
 def _trading_day_key(now: dt.datetime | None = None) -> str:
@@ -121,7 +123,11 @@ def _render_panduan() -> None:
             f"Selain itu, data screener otomatis full-refresh sendiri tiap hari jam "
             f"**{DAILY_RESET_HOUR:02d}:{DAILY_RESET_MINUTE:02d} WIB** — begitu ada yang buka "
             "dashboard setelah jam segitu, data kemarin otomatis dibuang dan diambil ulang "
-            "dari nol, nggak perlu diklik manual.\n\n"
+            "dari nol, nggak perlu diklik manual. Halaman ini juga reload sendiri tiap "
+            f"{AUTOREFRESH_INTERVAL_MS // 60000} menit SELAMA tab-nya kebuka di browser, "
+            "jadi nggak perlu nunggu kamu buka/reload manual buat nge-trigger refresh jam "
+            "08:30-nya — tapi ini cuma jalan kalau tab-nya beneran kebuka, bukan proses "
+            "background yang jalan sendiri walau browser ditutup.\n\n"
             "Tips: pertama kali coba, pakai universe **LQ45** dulu biar cepat, baru pindah ke "
             "'Semua saham IDX' kalau mau eksplor lebih luas."
         )
@@ -287,6 +293,13 @@ def _render_kalender() -> None:
 
 
 def main() -> None:
+    # Reload otomatis tiap AUTOREFRESH_INTERVAL_MS selama tab dashboard terbuka, jadi begitu
+    # jam lewat 08:30 WIB, halaman rerun sendiri (tanpa perlu diklik/reload manual) dan
+    # otomatis dapat _trading_day_key() yang baru -> data screener full-refresh dari nol.
+    # Kalau tab-nya beneran ditutup, ini nggak jalan sama sekali (JS-nya cuma hidup selama
+    # halamannya kebuka di browser) -- bukan pengganti buat proses yang jalan tanpa browser.
+    st_autorefresh(interval=AUTOREFRESH_INTERVAL_MS, key="daily_reset_autorefresh")
+
     st.title("ARA Screener \U0001F4C8")
     st.caption(
         "Screener saham yang mendekati / berpotensi Auto Reject Atas (ARA) di BEI. "

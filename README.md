@@ -25,7 +25,15 @@ fundamental atau berita korporasi.
   murni sebagai bagian dari cache key (`_trading_day_key()` di `app.py`), jadi
   jalan otomatis di proses Streamlit yang sama, kapan pun ada yang mengakses
   setelah jam segitu. Ubah jamnya lewat `DAILY_RESET_HOUR`/`DAILY_RESET_MINUTE`
-  di `ara_screener/app.py` kalau perlu.
+  di `ara_screener/app.py` kalau perlu. Supaya nggak harus nunggu ada yang
+  buka/reload manual, halaman ini juga pakai
+  [`streamlit-autorefresh`](https://pypi.org/project/streamlit-autorefresh/)
+  buat reload diri sendiri tiap `AUTOREFRESH_INTERVAL_MS` (default 5 menit)
+  SELAMA tab dashboard-nya kebuka di browser — begitu 08:30 WIB lewat,
+  auto-reload berikutnya otomatis kena `_trading_day_key()` yang baru. Ini
+  murni client-side (JS timer di browser), bukan proses background yang
+  jalan walau tab-nya ditutup — kalau butuh yang beneran jalan tanpa browser
+  kebuka, itu ranahnya GitHub Actions (lihat bagian email pagi di bawah).
 - **Mendekati ARA**: saham yang harganya sudah di atas ambang tertentu
   (misal 90%) dari batas ARA hari ini. Termasuk kolom "Kekuatan Closing"
   untuk menilai apakah demand-nya masih kuat di penutupan.
