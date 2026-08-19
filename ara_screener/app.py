@@ -119,7 +119,9 @@ def _render_panduan() -> None:
             "| Ambang 'Mendekati ARA' | Batas minimal progress ke ARA buat masuk tab 1. |\n"
             "| Ambang skor 'Momentum Hari Ini' | Batas minimal skor buat masuk tab 2. |\n"
             "| Ambang persentil 'Akumulasi' | Mis. 80 = tampilin cuma 20% saham paling menonjol. |\n"
-            "| Muat / Refresh data | Ambil data harga terbaru & buang cache lama, kapan aja. |\n\n"
+            "| Muat / Refresh data | Ambil data harga terbaru & buang cache lama, kapan aja. |\n"
+            "| Bersihkan data kemarin | Sama-sama buang cache lama & ambil ulang dari nol; "
+            "tombol terpisah biar niatnya jelas kalau cuma mau mastiin tabel bukan sisa hari kemarin. |\n\n"
             f"Selain itu, data screener otomatis full-refresh sendiri tiap hari jam "
             f"**{DAILY_RESET_HOUR:02d}:{DAILY_RESET_MINUTE:02d} WIB** — begitu ada yang buka "
             "dashboard setelah jam segitu, data kemarin otomatis dibuang dan diambil ulang "
@@ -341,7 +343,15 @@ def main() -> None:
         )
 
         st.divider()
-        refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", width='stretch')
+        refresh_col, cleanse_col = st.columns(2)
+        with refresh_col:
+            refresh = st.button("\U0001F504 Muat / Refresh data", type="primary", width='stretch')
+        with cleanse_col:
+            cleanse = st.button(
+                "\U0001F9F9 Bersihkan data kemarin",
+                width='stretch',
+                help="Buang cache lama & ambil ulang data hari ini dari nol.",
+            )
 
     if universe_choice == "Upload CSV sendiri":
         if uploaded_df is None:
@@ -370,8 +380,10 @@ def main() -> None:
         "full-refresh tiap hari jam 08:30 WIB (bukan cuma nunggu cache lama expired)."
     )
 
-    if refresh:
+    if refresh or cleanse:
         _load_summary.clear()
+        if cleanse:
+            st.toast("Tabel dibersihkan dari data kemarin — mengambil ulang dari nol.", icon="\U0001F9F9")
 
     try:
         with st.spinner(f"Mengambil data harga untuk {len(kodes)} saham..."):
