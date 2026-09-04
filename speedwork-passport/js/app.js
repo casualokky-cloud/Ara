@@ -328,12 +328,106 @@ const SW = (() => {
     return `<svg class="ic ${cls || ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ""}</svg>`;
   }
 
+  // ---- full-color illustrated icon set, matching the realistic/colorful
+  // menu icons used elsewhere in the Speedwork app family ----
+
+  const COLOR_ICONS = {
+    user: `
+      <rect x="4" y="7" width="32" height="26" rx="4" fill="#fff" stroke="#d8cca0" stroke-width="1.5"/>
+      <rect x="4" y="7" width="32" height="8" rx="4" fill="#1aa851"/>
+      <rect x="4" y="11" width="32" height="4" fill="#1aa851"/>
+      <circle cx="13.5" cy="24" r="5.4" fill="#0a8a44"/>
+      <circle cx="13.5" cy="22.3" r="2.1" fill="#fff"/>
+      <path d="M8.6 27.8c1-2.3 2.9-3.4 4.9-3.4s3.9 1.1 4.9 3.4" fill="#fff"/>
+      <rect x="21.5" y="20" width="11" height="2.4" rx="1.2" fill="#cfd8d2"/>
+      <rect x="21.5" y="25" width="8" height="2.4" rx="1.2" fill="#cfd8d2"/>`,
+    wrench: `
+      <g transform="rotate(45 20 20)">
+        <rect x="17" y="2" width="6" height="15" rx="2.5" fill="#e04b3a"/>
+        <rect x="18.3" y="2" width="3.4" height="15" rx="1.5" fill="#f38272"/>
+        <rect x="17" y="17" width="6" height="17" rx="2" fill="#c8ccd0"/>
+      </g>
+      <g transform="rotate(-40 20 20)">
+        <rect x="17.2" y="8" width="5.6" height="26" rx="2.5" fill="#4b6672"/>
+        <path d="M14 4a6 6 0 0 0 6 6 6 6 0 0 0 6-6 6 6 0 0 1-1.8 8.3 6 6 0 0 1-8.4-1.8A6 6 0 0 1 14 4z" fill="#6f8b98"/>
+      </g>`,
+    gamepad: `
+      <rect x="3" y="13" width="34" height="16" rx="8" fill="#5b4bc4"/>
+      <rect x="3" y="13" width="34" height="9" rx="8" fill="#7566e0"/>
+      <rect x="10.5" y="17.5" width="3" height="8" rx="1.2" fill="#fff"/>
+      <rect x="7.5" y="20.5" width="8" height="3" rx="1.2" fill="#fff"/>
+      <circle cx="27" cy="18.5" r="2.1" fill="#ff5a5f"/>
+      <circle cx="31.4" cy="22.5" r="2.1" fill="#ffd23f"/>`,
+    share: `
+      <circle cx="9" cy="20" r="5" fill="#2f9bf0"/>
+      <circle cx="30" cy="10" r="5" fill="#ff5a86"/>
+      <circle cx="30" cy="30" r="5" fill="#ffb238"/>
+      <path d="M13.2 18 26 11.5M13.2 22l12.8 6.5" stroke="#9aa5ad" stroke-width="2.6" stroke-linecap="round"/>`,
+    clipboard: `
+      <rect x="8" y="6" width="24" height="30" rx="3" fill="#fff" stroke="#d8cca0" stroke-width="1.5"/>
+      <rect x="14" y="3" width="12" height="7" rx="2.5" fill="#8a6a3a"/>
+      <rect x="12.5" y="16" width="15" height="2.6" rx="1.3" fill="#cfd8d2"/>
+      <rect x="12.5" y="21.5" width="15" height="2.6" rx="1.3" fill="#cfd8d2"/>
+      <rect x="12.5" y="27" width="9" height="2.6" rx="1.3" fill="#cfd8d2"/>
+      <circle cx="27" cy="28.3" r="6" fill="#1aa851"/>
+      <path d="M24 28.2l2 2 3.6-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    apps: `
+      <rect x="4" y="4" width="14" height="14" rx="4" fill="#e04b3a"/>
+      <rect x="22" y="4" width="14" height="14" rx="4" fill="#ffb238"/>
+      <rect x="4" y="22" width="14" height="14" rx="4" fill="#1aa851"/>
+      <rect x="22" y="22" width="14" height="14" rx="4" fill="#2f9bf0"/>`,
+    game: `
+      <rect x="6" y="16" width="16" height="16" rx="4" fill="#e04b3a" transform="rotate(-12 14 24)"/>
+      <circle cx="11" cy="20" r="1.6" fill="#fff" transform="rotate(-12 14 24)"/>
+      <circle cx="17" cy="26" r="1.6" fill="#fff" transform="rotate(-12 14 24)"/>
+      <rect x="19" y="10" width="16" height="16" rx="4" fill="#2f9bf0" transform="rotate(10 27 18)"/>
+      <circle cx="24" cy="13.5" r="1.6" fill="#fff" transform="rotate(10 27 18)"/>
+      <circle cx="30" cy="13.5" r="1.6" fill="#fff" transform="rotate(10 27 18)"/>
+      <circle cx="24" cy="19.5" r="1.6" fill="#fff" transform="rotate(10 27 18)"/>
+      <circle cx="30" cy="19.5" r="1.6" fill="#fff" transform="rotate(10 27 18)"/>`,
+    tire: `
+      <circle cx="20" cy="20" r="16" fill="#26282b"/>
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#0e0f10" stroke-width="2"/>
+      <circle cx="20" cy="20" r="10.5" fill="#c6cbce"/>
+      <circle cx="20" cy="20" r="4.4" fill="#8a9096"/>
+      <g fill="#9aa0a5"><rect x="18.6" y="10" width="2.8" height="7" rx="1.2"/><rect x="18.6" y="23" width="2.8" height="7" rx="1.2"/><rect x="10" y="18.6" width="7" height="2.8" rx="1.2"/><rect x="23" y="18.6" width="7" height="2.8" rx="1.2"/></g>
+      <circle cx="20" cy="20" r="2" fill="#e04b3a"/>`,
+    trophy: `
+      <path d="M13 6h14v9a7 7 0 0 1-14 0V6z" fill="#ffd23f"/>
+      <path d="M13 8H7a4 4 0 0 0 4 7" fill="none" stroke="#ffd23f" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M27 8h6a4 4 0 0 1-4 7" fill="none" stroke="#ffd23f" stroke-width="2.6" stroke-linecap="round"/>
+      <rect x="17.5" y="21" width="5" height="6" fill="#e0a92a"/>
+      <path d="M11 34c0-3 4-5 9-5s9 2 9 5" fill="#e0a92a"/>
+      <path d="M20 8l1.4 3 3.3.4-2.4 2.3.6 3.3-2.9-1.6-2.9 1.6.6-3.3-2.4-2.3 3.3-.4z" fill="#fff2c2"/>`,
+    passport: `
+      <rect x="7" y="4" width="26" height="32" rx="3" fill="#1aa851"/>
+      <rect x="7" y="4" width="26" height="32" rx="3" fill="none" stroke="#0a8a44" stroke-width="1.5"/>
+      <circle cx="20" cy="16" r="6" fill="none" stroke="#fbf6e8" stroke-width="1.6"/>
+      <circle cx="20" cy="16" r="2.4" fill="#fbf6e8"/>
+      <rect x="12" y="26" width="16" height="2.2" rx="1.1" fill="#fbf6e8" opacity=".85"/>
+      <rect x="15" y="30" width="10" height="2.2" rx="1.1" fill="#fbf6e8" opacity=".6"/>`,
+    area: `
+      <path d="M20 4c7 0 12.5 5.4 12.5 12.5C32.5 26 20 37 20 37S7.5 26 7.5 16.5C7.5 9.4 13 4 20 4z" fill="#e04b3a"/>
+      <path d="M20 4c7 0 12.5 5.4 12.5 12.5C32.5 26 20 37 20 37S7.5 26 7.5 16.5C7.5 9.4 13 4 20 4z" fill="none" stroke="#a8291d" stroke-width="1.4"/>
+      <circle cx="20" cy="16.5" r="5.4" fill="#fff"/>
+      <circle cx="20" cy="16.5" r="2.4" fill="#e04b3a"/>`,
+    gallery: `
+      <rect x="4" y="8" width="32" height="26" rx="3" fill="#fff" stroke="#d8cca0" stroke-width="1.5"/>
+      <rect x="6" y="10" width="28" height="22" rx="2" fill="#cfeede"/>
+      <circle cx="14" cy="18" r="3.2" fill="#ffd23f"/>
+      <path d="M6 30l8.5-8.5a2 2 0 0 1 2.8 0L24 28l3-3a2 2 0 0 1 2.8 0L34 29v3H6z" fill="#1aa851"/>`,
+  };
+
+  function colorIcon(name, cls) {
+    return `<svg class="ic-color ${cls || ""}" viewBox="0 0 40 40">${COLOR_ICONS[name] || ""}</svg>`;
+  }
+
   return {
     EVENTS, STAMPS, MAP_POS,
     getEvent, getActiveEvent,
     loadUsers, saveUsers, getCurrentGtid, setCurrentGtid, clearCurrentGtid, getCurrentUser,
     createUser, updateUser, setStamp, stampName, stampCount,
     loadPending, savePending, requestScan, cancelScan, resolvePending,
-    appendLog, loadLog, onSync, drawFakeQr, icon,
+    appendLog, loadLog, onSync, drawFakeQr, icon, colorIcon,
   };
 })();

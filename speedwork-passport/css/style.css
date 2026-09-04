@@ -2,12 +2,16 @@
    Green brand theme derived from the Speedwork Autocare logo. */
 
 :root {
-  --green-dark: #00753a;
-  --green: #008f47;
-  --green-mid: #17a558;
+  --green-dark: #0a8a44;
+  --green: #1aa851;
+  --green-mid: #35c765;
   --green-light: #91c759;
   --green-pale: #e7f5ea;
   --green-pale-2: #d5efdc;
+  --paper: #fbf6e8;
+  --paper-dark: #f2e9cf;
+  --paper-line: #e2d3a4;
+  --paper-ink: #4a3c1e;
   --red: #eb2f23;
   --yellow: #fed22a;
   --ink: #16241c;
@@ -26,6 +30,7 @@
 * { box-sizing: border-box; }
 
 svg.ic { width: 20px; height: 20px; flex-shrink: 0; display: inline-block; }
+svg.ic-color { width: 26px; height: 26px; flex-shrink: 0; display: inline-block; }
 
 html, body {
   margin: 0;
@@ -393,15 +398,35 @@ button { font-family: inherit; }
 
 .passport-book {
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #12331f, #0d2818);
-  border: 1px solid #0a2013;
+  background:
+    radial-gradient(circle at 8% 6%, rgba(120,90,40,.05), transparent 12%),
+    radial-gradient(circle at 92% 90%, rgba(120,90,40,.05), transparent 12%),
+    radial-gradient(circle at 30% 70%, rgba(120,90,40,.04), transparent 40%),
+    radial-gradient(circle at 75% 25%, rgba(120,90,40,.04), transparent 35%),
+    linear-gradient(180deg, var(--paper), var(--paper-dark));
+  border: 1px solid var(--paper-line);
   padding: 18px 14px 20px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), inset 0 0 46px rgba(120, 90, 40, .1);
   overflow: hidden;
+  position: relative;
   transition: filter .3s ease;
 }
+.passport-book::before {
+  content: "";
+  position: absolute; left: 50%; top: 8px; bottom: 8px; width: 3px;
+  background: linear-gradient(180deg, transparent, rgba(120,90,40,.3) 12%, rgba(120,90,40,.3) 88%, transparent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(120,90,40,.18);
+  pointer-events: none;
+}
+.passport-book::after {
+  content: "";
+  position: absolute; right: 0; bottom: 0; width: 30px; height: 30px;
+  background: linear-gradient(135deg, transparent 52%, rgba(120,90,40,.22) 53%, rgba(120,90,40,.08) 68%, transparent 70%);
+  pointer-events: none;
+}
 .passport-book.is-closed {
-  filter: grayscale(0.9) brightness(0.88) saturate(0.5);
+  filter: grayscale(0.75) brightness(0.9) sepia(0.15);
 }
 
 .passport-ribbon {
@@ -426,8 +451,8 @@ button { font-family: inherit; }
   text-align: center;
   margin-bottom: 6px;
 }
-.passport-book__event { font-weight: 800; font-size: 15px; color: #d9f2e0; letter-spacing: .02em; }
-.passport-book__sub { font-size: 11px; color: rgba(217,242,224,.6); margin-top: 2px; }
+.passport-book__event { font-weight: 800; font-size: 15px; color: var(--paper-ink); letter-spacing: .02em; }
+.passport-book__sub { font-size: 11px; color: rgba(74,60,30,.65); margin-top: 2px; }
 
 .stampmap {
   position: relative;
@@ -436,21 +461,22 @@ button { font-family: inherit; }
   border-radius: 18px;
   overflow: hidden;
   background:
-    repeating-linear-gradient(118deg, rgba(255,255,255,.035) 0 3px, transparent 3px 26px),
-    radial-gradient(ellipse at 20% 15%, rgba(23,165,88,.35), transparent 55%),
-    radial-gradient(ellipse at 85% 85%, rgba(254,210,42,.12), transparent 50%),
-    #12331f;
+    radial-gradient(circle at 15% 20%, rgba(120,90,40,.05), transparent 30%),
+    radial-gradient(circle at 80% 75%, rgba(120,90,40,.05), transparent 30%),
+    radial-gradient(circle at 60% 15%, rgba(23,165,88,.05), transparent 35%),
+    linear-gradient(175deg, #f7f0dc, #efe4c4);
+  box-shadow: inset 0 0 30px rgba(120,90,40,.12);
 }
 .stampmap svg.connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
-.road-base { fill: none; stroke: rgba(255,255,255,.14); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.road-base { fill: none; stroke: rgba(120,90,40,.25); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
 .road-progress {
   fill: none; stroke: url(#roadProgressGrad); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(145, 199, 89, .65));
+  filter: drop-shadow(0 1px 2px rgba(120,90,40,.3));
   transition: stroke-dashoffset 1s cubic-bezier(.34,1.1,.4,1);
 }
 .road-dash {
-  fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.6; stroke-dasharray: 5 8;
+  fill: none; stroke: rgba(74,60,30,.55); stroke-width: 1.6; stroke-dasharray: 5 8;
   stroke-linecap: round; stroke-linejoin: round;
 }
 
@@ -493,14 +519,14 @@ button { font-family: inherit; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 .stampnode__circle {
-  width: 52px; height: 52px; border-radius: 50%;
+  width: 54px; height: 54px; border-radius: 50%;
   margin: 0 auto 6px;
-  background: #1a3f27;
-  border: 2.5px solid rgba(255,255,255,.25);
+  background: #fffaf0;
+  border: 2.5px solid rgba(120,90,40,.3);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 15px;
-  color: rgba(255,255,255,.75);
-  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+  color: var(--paper-ink);
+  box-shadow: 0 3px 8px rgba(120,90,40,.25);
   cursor: pointer;
   position: relative;
   transition: transform .15s ease, box-shadow .15s ease;
@@ -513,16 +539,16 @@ button { font-family: inherit; }
   70% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
-.stampnode__circle svg { width: 22px; height: 22px; }
+.stampnode__circle svg.ic-color { width: 30px; height: 30px; }
 .stampnode__label {
-  font-size: 9.5px; font-weight: 700; line-height: 1.2; color: rgba(217,242,224,.75);
+  font-size: 9.5px; font-weight: 700; line-height: 1.2; color: var(--paper-ink);
 }
 .stampnode.is-done .stampnode__circle {
-  background: linear-gradient(140deg, var(--green-mid), var(--green-dark));
-  border-color: var(--yellow);
-  color: #fff;
+  background: linear-gradient(140deg, #fffdf5, #fbf1d0);
+  border-color: var(--green-dark);
+  box-shadow: 0 3px 10px rgba(120,90,40,.3), 0 0 0 3px rgba(10,138,68,.15);
 }
-.stampnode.is-done .stampnode__label { color: #fff; font-weight: 800; }
+.stampnode.is-done .stampnode__label { color: var(--green-dark); font-weight: 800; }
 .stampnode__check {
   position: absolute; top: -4px; right: -4px;
   width: 18px; height: 18px; border-radius: 50%;
@@ -584,12 +610,13 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .stampitem__num {
-  width: 30px; height: 30px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: 50%;
   background: var(--green-pale); color: var(--green-dark);
   font-weight: 800; font-size: 12.5px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.stampitem__num svg.ic-color { width: 24px; height: 24px; }
 .stampitem__name { font-weight: 700; font-size: 13px; }
 .stampitem__desc { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
 .stampitem__status {
@@ -747,11 +774,14 @@ button { font-family: inherit; }
 .gallery-tile {
   aspect-ratio: 1/1;
   border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px;
-  color: #fff; font-size: 11px; font-weight: 700; text-align: center; padding: 8px;
+  color: var(--ink); font-size: 11px; font-weight: 700; text-align: center; padding: 8px;
 }
-.gallery-tile svg { width: 30px; height: 30px; }
+.gallery-tile svg.ic-color { width: 38px; height: 38px; }
 
 /* ---------- Profile / GT.ID tab ---------- */
 

@@ -16,10 +16,10 @@
   ];
 
   const GALLERY_ITEMS = [
-    { icon: "tire", label: "Katalog Ban Terbaru", grad: "linear-gradient(150deg,#008f47,#17a558)" },
-    { icon: "wrench", label: "Video Edukasi Servis", grad: "linear-gradient(150deg,#00753a,#91c759)" },
-    { icon: "gamepad", label: "Keseruan Booth", grad: "linear-gradient(150deg,#17a558,#008f47)" },
-    { icon: "trophy", label: "Galeri Pemenang", grad: "linear-gradient(150deg,#eb2f23,#fed22a)" },
+    { icon: "tire", label: "Katalog Ban Terbaru" },
+    { icon: "wrench", label: "Video Edukasi Servis" },
+    { icon: "gamepad", label: "Keseruan Booth" },
+    { icon: "trophy", label: "Galeri Pemenang" },
   ];
 
   let activeStampSheet = null; // stamp id currently open in the sheet
@@ -40,6 +40,11 @@
       const name = el.getAttribute("data-icon");
       el.innerHTML = SW.icon(name);
       el.removeAttribute("data-icon");
+    });
+    qa("[data-icon-color]", root || document).forEach(el => {
+      const name = el.getAttribute("data-icon-color");
+      el.innerHTML = SW.colorIcon(name);
+      el.removeAttribute("data-icon-color");
     });
   }
 
@@ -316,7 +321,7 @@
       node.style.setProperty("--i", i);
       node.innerHTML = `
         <div class="stampnode__circle">
-          ${SW.icon(s.icon)}
+          ${SW.colorIcon(s.icon)}
           <div class="stampnode__check">${SW.icon("check")}</div>
         </div>
         <div class="stampnode__label">${s.id}. ${s.name}</div>
@@ -413,7 +418,7 @@
     const s = SW.STAMPS.find(x => x.id === stampId);
     activeStampSheet = stampId;
 
-    q("#stampdetail-icon").innerHTML = SW.icon(s.icon);
+    q("#stampdetail-icon").innerHTML = SW.colorIcon(s.icon);
     q("#stampdetail-title").textContent = `Stamp ${s.id} — ${s.name}`;
     q("#stampdetail-desc").textContent = s.desc;
 
@@ -483,7 +488,7 @@
   function renderArea() {
     q("#branch-list").innerHTML = BRANCHES.map(b => `
       <div class="branch-card">
-        <div class="branch-card__pin">${SW.icon("area")}</div>
+        <div class="branch-card__pin">${SW.colorIcon("area")}</div>
         <div>
           <div class="branch-card__name">${b.name}</div>
           <div class="branch-card__addr">${b.addr}</div>
@@ -495,8 +500,8 @@
 
   function renderGallery() {
     q("#gallery-grid").innerHTML = GALLERY_ITEMS.map(g => `
-      <div class="gallery-tile" style="background:${g.grad}">
-        ${SW.icon(g.icon)}
+      <div class="gallery-tile">
+        ${SW.colorIcon(g.icon)}
         <span>${g.label}</span>
       </div>
     `).join("");
