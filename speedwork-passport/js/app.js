@@ -59,8 +59,38 @@ const SW = (() => {
   }
 
   function loadUsers() {
-    try { return JSON.parse(localStorage.getItem(LS_USERS)) || {}; }
-    catch (e) { return {}; }
+    let users;
+    try { users = JSON.parse(localStorage.getItem(LS_USERS)) || {}; }
+    catch (e) { users = {}; }
+    let changed = false;
+    Object.values(users).forEach(u => { if (migrateUserEvents(u)) changed = true; });
+    if (changed) localStorage.setItem(LS_USERS, JSON.stringify(users));
+    return users;
+  }
+
+  // Self-heals accounts created before the multi-event passport model
+  // (a flat `user.stamps`, or an `events` map missing an event that got
+  // added later) into the current shape, so a stale demo account never
+  // hard-crashes the passport screen. Mutates `user` in place; returns
+  // true if it changed anything (caller decides whether to persist).
+  function migrateUserEvents(user) {
+    if (!user.events) {
+      const events = {};
+      EVENTS.forEach(ev => { events[ev.id] = blankStamps(); });
+      if (user.stamps) {
+        Object.assign(events[getActiveEvent().id], user.stamps);
+        delete user.stamps;
+      }
+      STAMPS.forEach(s => { events["giias2026"][s.id] = true; });
+      STAMPS.forEach((s, i) => { events["prj2026"][s.id] = i < 7; });
+      user.events = events;
+      return true;
+    }
+    let changed = false;
+    EVENTS.forEach(ev => {
+      if (!user.events[ev.id]) { user.events[ev.id] = blankStamps(); changed = true; }
+    });
+    return changed;
   }
   function saveUsers(users) {
     localStorage.setItem(LS_USERS, JSON.stringify(users));

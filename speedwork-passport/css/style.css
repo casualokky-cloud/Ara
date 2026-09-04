@@ -387,12 +387,39 @@ button { font-family: inherit; }
 
 /* ---------- Passport journey view ---------- */
 
+.passport-book-wrap {
+  position: relative;
+}
+
 .passport-book {
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, #12331f, #0d2818);
   border: 1px solid #0a2013;
   padding: 18px 14px 20px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: filter .3s ease;
+}
+.passport-book.is-closed {
+  filter: grayscale(0.9) brightness(0.88) saturate(0.5);
+}
+
+.passport-ribbon {
+  position: absolute;
+  top: 16px; right: -38px;
+  width: 150px;
+  padding: 6px 0;
+  text-align: center;
+  background: linear-gradient(180deg, #eb2f23, #b31f16);
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  transform: rotate(38deg);
+  box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .passport-book__head {

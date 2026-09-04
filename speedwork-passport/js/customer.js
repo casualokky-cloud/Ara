@@ -224,6 +224,8 @@
       : `${ev.subtitle} · ${ev.dateLabel}`;
 
     const statusBanner = q("#event-status-banner");
+    q("#passport-book").classList.toggle("is-closed", !ev.active);
+    q("#passport-ribbon").style.display = ev.active ? "none" : "block";
     if (ev.active) {
       statusBanner.style.display = "none";
     } else {
