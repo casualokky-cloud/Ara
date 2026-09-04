@@ -179,36 +179,82 @@
     buildStampList(u);
   }
 
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const MAP_SCALE = 3.8; // % position -> 0..380 viewBox units
+
+  // Catmull-Rom -> cubic bezier, so the route reads as a winding road
+  // instead of straight dashed segments between stamps.
+  function smoothRoadPath(points) {
+    if (points.length < 2) return "";
+    let d = `M ${points[0].x} ${points[0].y} `;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d += `C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y} `;
+    }
+    return d;
+  }
+
   function buildStampMap(u) {
     const map = q("#stampmap");
-    qa(".stampnode", map).forEach(n => n.remove());
+    qa(".stampnode, .route-car, .route-flag", map).forEach(n => n.remove());
     const svg = q("#stampmap-svg");
     svg.innerHTML = "";
-
-    // connector lines, sequential 1..N
-    let path = "";
-    SW.MAP_POS.forEach((p, i) => {
-      const x = p.x, y = p.y;
-      path += (i === 0 ? "M" : "L") + `${x} ${y} `;
-    });
-    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-    const pts = SW.MAP_POS.map(p => `${p.x * 3.8},${p.y * 3.8}`).join(" ");
     svg.setAttribute("viewBox", "0 0 380 380");
-    poly.setAttribute("points", pts);
-    poly.setAttribute("fill", "none");
-    poly.setAttribute("stroke", "#bfe0c9");
-    poly.setAttribute("stroke-width", "3");
-    poly.setAttribute("stroke-dasharray", "2 9");
-    poly.setAttribute("stroke-linecap", "round");
-    svg.appendChild(poly);
+
+    const routePoints = SW.MAP_POS.map(p => ({ x: p.x * MAP_SCALE, y: p.y * MAP_SCALE }));
+    const d = smoothRoadPath(routePoints);
+
+    const defs = document.createElementNS(SVG_NS, "defs");
+    defs.innerHTML = `
+      <linearGradient id="roadProgressGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fed22a"/>
+        <stop offset="100%" stop-color="#91c759"/>
+      </linearGradient>`;
+    svg.appendChild(defs);
+
+    const roadBase = document.createElementNS(SVG_NS, "path");
+    roadBase.setAttribute("class", "road-base");
+    roadBase.setAttribute("d", d);
+    svg.appendChild(roadBase);
+
+    const roadProgress = document.createElementNS(SVG_NS, "path");
+    roadProgress.setAttribute("class", "road-progress");
+    roadProgress.setAttribute("d", d);
+    svg.appendChild(roadProgress);
+
+    const roadDash = document.createElementNS(SVG_NS, "path");
+    roadDash.setAttribute("class", "road-dash");
+    roadDash.setAttribute("d", d);
+    svg.appendChild(roadDash);
+
+    const doneCount = SW.stampCount(u);
+    const total = SW.STAMPS.length;
+    const frac = total ? doneCount / total : 0;
+    const len = roadProgress.getTotalLength();
+    roadProgress.style.strokeDasharray = `${len}`;
+    roadProgress.style.strokeDashoffset = `${len}`;
+    requestAnimationFrame(() => {
+      roadProgress.style.strokeDashoffset = `${len * (1 - frac)}`;
+    });
+
+    const nextStamp = SW.STAMPS.find(s => !u.stamps[s.id]);
 
     SW.STAMPS.forEach((s, i) => {
       const pos = SW.MAP_POS[i];
       const done = !!u.stamps[s.id];
+      const isNext = !done && nextStamp && nextStamp.id === s.id;
       const node = document.createElement("div");
-      node.className = "stampnode" + (done ? " is-done" : "");
+      node.className = "stampnode" + (done ? " is-done" : "") + (isNext ? " is-next" : "");
       node.style.left = pos.x + "%";
       node.style.top = pos.y + "%";
+      node.style.setProperty("--i", i);
       node.innerHTML = `
         <div class="stampnode__circle">
           ${SW.icon(s.icon)}
@@ -216,9 +262,56 @@
         </div>
         <div class="stampnode__label">${s.id}. ${s.name}</div>
       `;
-      node.addEventListener("click", () => openStampSheet(s.id));
+      node.addEventListener("click", () => {
+        const circle = q(".stampnode__circle", node);
+        circle.classList.remove("is-tapped");
+        void circle.offsetWidth; // restart animation
+        circle.classList.add("is-tapped");
+        openStampSheet(s.id);
+      });
       map.appendChild(node);
+
+      if (s.id === total) {
+        const flag = document.createElement("div");
+        flag.className = "route-flag";
+        flag.style.left = pos.x + "%";
+        flag.style.top = pos.y + "%";
+        flag.innerHTML = flagGraphic();
+        map.appendChild(flag);
+      }
     });
+
+    // little car marker riding the road, parked at how far the passport
+    // has progressed overall (not tied to a single stamp order).
+    const carIndex = Math.max(0, Math.min(1, frac)) * len;
+    const carPt = roadProgress.getPointAtLength(carIndex);
+    const car = document.createElement("div");
+    car.className = "route-car";
+    car.style.left = (carPt.x / MAP_SCALE) + "%";
+    car.style.top = (carPt.y / MAP_SCALE) + "%";
+    car.innerHTML = carGraphic();
+    map.appendChild(car);
+  }
+
+  function carGraphic() {
+    return `<svg viewBox="0 0 32 20" width="19" height="12">
+      <path d="M2 14 Q2 9 7 8 L10 4 Q11 2 14 2 L22 2 Q25 2 26 5 L28 8 Q31 8 31 12 L31 14 Q31 16 29 16 L27 16 A3 3 0 1 1 21 16 L13 16 A3 3 0 1 1 7 16 L4 16 Q2 16 2 14 Z" fill="#eb2f23" stroke="#8a1a12" stroke-width=".6"/>
+      <path d="M11 5 L14 5 Q15 5 15 6.4 L15 8 L9 8 Z" fill="#bfe9f5" opacity=".85"/>
+      <path d="M17 5 L22 5 Q23.5 5 24.5 7 L25.5 8 L17 8 Z" fill="#bfe9f5" opacity=".85"/>
+      <circle cx="10" cy="16" r="3" fill="#1a1a1a"/><circle cx="10" cy="16" r="1.1" fill="#888"/>
+      <circle cx="24" cy="16" r="3" fill="#1a1a1a"/><circle cx="24" cy="16" r="1.1" fill="#888"/>
+    </svg>`;
+  }
+
+  function flagGraphic() {
+    return `<svg viewBox="0 0 20 20" width="18" height="18">
+      <rect x="3" y="2" width="2" height="16" rx="1" fill="#8a6a4a"/>
+      <rect x="5" y="2" width="12" height="8" fill="#fff"/>
+      <rect x="5" y="2" width="3" height="3" fill="#181818"/>
+      <rect x="11" y="2" width="3" height="3" fill="#181818"/>
+      <rect x="8" y="5" width="3" height="3" fill="#181818"/>
+      <rect x="14" y="5" width="3" height="3" fill="#181818"/>
+    </svg>`;
   }
 
   function buildStampList(u) {

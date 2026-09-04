@@ -384,8 +384,8 @@ button { font-family: inherit; }
 
 .passport-book {
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #f4faf5, #e9f5ec);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #12331f, #0d2818);
+  border: 1px solid #0a2013;
   padding: 18px 14px 20px;
   box-shadow: var(--shadow-sm);
 }
@@ -394,53 +394,139 @@ button { font-family: inherit; }
   text-align: center;
   margin-bottom: 6px;
 }
-.passport-book__event { font-weight: 800; font-size: 15px; color: var(--green-dark); }
-.passport-book__sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.passport-book__event { font-weight: 800; font-size: 15px; color: #d9f2e0; letter-spacing: .02em; }
+.passport-book__sub { font-size: 11px; color: rgba(217,242,224,.6); margin-top: 2px; }
 
 .stampmap {
   position: relative;
   width: 100%;
   height: 380px;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(118deg, rgba(255,255,255,.035) 0 3px, transparent 3px 26px),
+    radial-gradient(ellipse at 20% 15%, rgba(23,165,88,.35), transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(254,210,42,.12), transparent 50%),
+    #12331f;
 }
-.stampmap svg.connectors { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stampmap svg.connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.road-base { fill: none; stroke: rgba(255,255,255,.14); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.road-progress {
+  fill: none; stroke: url(#roadProgressGrad); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(145, 199, 89, .65));
+  transition: stroke-dashoffset 1s cubic-bezier(.34,1.1,.4,1);
+}
+.road-dash {
+  fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.6; stroke-dasharray: 5 8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.route-flag {
+  position: absolute; transform: translate(calc(-50% + 22px), -48px);
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));
+  pointer-events: none;
+  z-index: 4;
+}
+
+.route-car {
+  position: absolute;
+  width: 28px; height: 28px;
+  margin-left: -14px; margin-top: -14px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,.4), 0 0 0 3px rgba(254,210,42,.5);
+  z-index: 6;
+  transition: left .8s cubic-bezier(.4,0,.2,1), top .8s cubic-bezier(.4,0,.2,1);
+  animation: carFloat 1.6s ease-in-out infinite;
+}
+@keyframes carFloat {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-3px) rotate(4deg); }
+}
 
 .stampnode {
   position: absolute;
   width: 76px;
   transform: translate(-50%, -50%);
   text-align: center;
+  z-index: 3;
+  animation: nodePop .5s cubic-bezier(.34,1.56,.64,1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes nodePop {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  65% { transform: translate(-50%, -50%) scale(1.14); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 .stampnode__circle {
   width: 52px; height: 52px; border-radius: 50%;
   margin: 0 auto 6px;
-  background: #fff;
-  border: 2.5px solid var(--line);
+  background: #1a3f27;
+  border: 2.5px solid rgba(255,255,255,.25);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 15px;
-  color: var(--ink-soft);
-  box-shadow: var(--shadow-sm);
+  color: rgba(255,255,255,.75);
+  box-shadow: 0 3px 8px rgba(0,0,0,.35);
   cursor: pointer;
   position: relative;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.stampnode__circle:hover { transform: scale(1.08); }
+.stampnode__circle.is-tapped { animation: tapBounce .32s ease; }
+@keyframes tapBounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(.84); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 .stampnode__circle svg { width: 22px; height: 22px; }
 .stampnode__label {
-  font-size: 9.5px; font-weight: 700; line-height: 1.2; color: var(--ink-soft);
+  font-size: 9.5px; font-weight: 700; line-height: 1.2; color: rgba(217,242,224,.75);
 }
 .stampnode.is-done .stampnode__circle {
   background: linear-gradient(140deg, var(--green-mid), var(--green-dark));
-  border-color: var(--green-dark);
+  border-color: var(--yellow);
   color: #fff;
 }
-.stampnode.is-done .stampnode__label { color: var(--green-dark); }
+.stampnode.is-done .stampnode__label { color: #fff; font-weight: 800; }
 .stampnode__check {
   position: absolute; top: -4px; right: -4px;
   width: 18px; height: 18px; border-radius: 50%;
   background: var(--yellow); color: #6b4e00;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  opacity: 0;
+  font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  opacity: 0; transform: scale(.4);
+  transition: all .25s cubic-bezier(.34,1.56,.64,1);
 }
-.stampnode.is-done .stampnode__check { opacity: 1; }
+.stampnode.is-done .stampnode__check { opacity: 1; transform: scale(1); }
+
+.stampnode.is-next .stampnode__circle {
+  border-color: var(--green-light);
+  box-shadow: 0 0 0 0 rgba(145, 199, 89, .6);
+  animation: pulseRing 1.8s infinite;
+}
+@keyframes pulseRing {
+  0% { box-shadow: 0 3px 8px rgba(0,0,0,.35), 0 0 0 0 rgba(145, 199, 89, .55); }
+  70% { box-shadow: 0 3px 8px rgba(0,0,0,.35), 0 0 0 12px rgba(145, 199, 89, 0); }
+  100% { box-shadow: 0 3px 8px rgba(0,0,0,.35), 0 0 0 0 rgba(145, 199, 89, 0); }
+}
+.stampnode.is-next .stampnode__label { color: var(--green-light); font-weight: 800; }
+
+.viewtabs {
+  display: flex;
+  background: var(--green-pale);
+  border-radius: 999px;
+  padding: 4px;
+  margin-top: 16px;
+}
+.viewtabs button {
+  flex: 1; border: none; background: transparent;
+  padding: 9px 0; border-radius: 999px; font-weight: 700; font-size: 12.5px;
+  color: var(--green-dark); cursor: pointer;
+}
+.viewtabs button.is-active { background: var(--green-dark); color: #fff; }
 
 .viewtabs {
   display: flex;
