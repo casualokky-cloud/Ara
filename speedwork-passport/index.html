@@ -81,12 +81,16 @@
         <div class="progress-bar"><div class="progress-bar__fill" id="home-progress-fill" style="width:0%"></div></div>
       </div>
 
+      <div class="section-title" style="margin-top:20px">Event Aktif</div>
       <div class="passport-cover" id="open-passport">
-        <div class="passport-cover__label">SPEEDWORK AUTOCARE</div>
-        <div class="passport-cover__title">SW Passport 2026</div>
+        <div class="passport-cover__label" id="active-event-label">SPEEDWORK AUTOCARE</div>
+        <div class="passport-cover__title" id="active-event-title">SW Passport 2026</div>
         <div class="passport-cover__badge" id="passport-cover-mark"></div>
         <div class="passport-cover__foot"><span>Buka Passport</span><span data-icon="chevron"></span></div>
       </div>
+
+      <div class="section-title">Riwayat Event</div>
+      <div id="event-history-list" class="stamplist" style="margin-top:0"></div>
 
       <div class="section-title"><span data-icon="id"></span> Menu Cepat</div>
       <div class="stamplist" style="margin-top:0">
@@ -109,13 +113,17 @@
   <section class="screen" id="screen-passport">
     <div class="topbar">
       <button class="topbar__back" data-go="screen-home"><span data-icon="back"></span></button>
-      <div class="topbar__title">SW Passport</div>
+      <div class="topbar__title" id="passport-topbar-title">SW Passport</div>
+      <button class="btn btn--pill-sm" id="btn-switch-event" style="margin-left:auto">Ganti Event</button>
     </div>
     <div class="screen__scroll">
+      <div class="event-status" id="event-status-banner" style="display:none">
+        <span data-icon="check"></span> <span id="event-status-text">Event ini sudah selesai</span>
+      </div>
       <div class="passport-book">
         <div class="passport-book__head">
-          <div class="passport-book__event">SPEEDWORK SERVICE PASSPORT 2026</div>
-          <div class="passport-book__sub">Ikuti alur di bawah &amp; kumpulkan seluruh stempel</div>
+          <div class="passport-book__event" id="passport-book-event">SPEEDWORK SERVICE PASSPORT 2026</div>
+          <div class="passport-book__sub" id="passport-book-sub">Ikuti alur di bawah &amp; kumpulkan seluruh stempel</div>
         </div>
         <div class="stampmap" id="stampmap">
           <svg class="connectors" id="stampmap-svg"></svg>
@@ -201,6 +209,10 @@
       <div id="stampdetail-done" style="display:none;text-align:center;padding:6px 0">
         <div style="color:var(--green-dark);font-weight:800;font-size:14px"><span data-icon="check"></span> Stamp sudah diklaim</div>
       </div>
+
+      <div id="stampdetail-closed" style="display:none;text-align:center;padding:6px 0">
+        <div style="color:var(--ink-soft);font-weight:700;font-size:13px">Event ini sudah selesai — stempel tidak bisa diklaim lagi.</div>
+      </div>
     </div>
   </div>
 
@@ -213,6 +225,16 @@
         <div class="stampdone__desc" id="success-desc">Progres passport kamu bertambah.</div>
         <button class="btn btn--primary" data-close-overlay>Lanjutkan</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ OVERLAY: event switcher ============ -->
+  <div class="overlay" id="overlay-events">
+    <div class="sheet">
+      <button class="sheet__close" data-close-overlay><span data-icon="close"></span></button>
+      <div class="sheet__title">Pilih Event</div>
+      <div class="sheet__desc">Passport dipakai untuk semua event offline Speedwork Autocare. Pilih event untuk lihat progres stempelnya.</div>
+      <div id="event-switch-list" class="stamplist" style="margin-top:0"></div>
     </div>
   </div>
 

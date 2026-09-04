@@ -18,6 +18,16 @@ const SW = (() => {
 
   const channel = ("BroadcastChannel" in window) ? new BroadcastChannel("sw-passport") : null;
 
+  // Passport works across every offline event Speedwork Autocare runs —
+  // each event gets its own stamp progress, but shares the same 9-stamp
+  // checklist/journey map. Order here is oldest first; IMOS 2026 is the
+  // one currently running.
+  const EVENTS = [
+    { id: "giias2026", name: "GIIAS 2026", subtitle: "Gaikindo Indonesia International Auto Show", dateLabel: "Jun 2026", active: false },
+    { id: "prj2026", name: "PRJ 2026", subtitle: "Pekan Raya Jakarta", dateLabel: "Jul 2026", active: false },
+    { id: "imos2026", name: "IMOS 2026", subtitle: "Indonesia Motor Show", dateLabel: "Sep 2026 · Berlangsung", active: true },
+  ];
+
   const STAMPS = [
     { id: 1, name: "Daftar SW Passport", desc: "Selesaikan pendaftaran akun & lengkapi profil kamu.", icon: "user" },
     { id: 2, name: "Konsultasi Servis", desc: "Konsultasi kondisi ban & kendaraan bersama tim teknisi.", icon: "wrench" },
@@ -74,16 +84,41 @@ const SW = (() => {
     return users[gtid] || null;
   }
 
+  function getEvent(eventId) {
+    return EVENTS.find(e => e.id === eventId) || null;
+  }
+  function getActiveEvent() {
+    return EVENTS.find(e => e.active) || EVENTS[EVENTS.length - 1];
+  }
+
+  function blankStamps() {
+    const stamps = {};
+    STAMPS.forEach(s => stamps[s.id] = false);
+    return stamps;
+  }
+
   function createUser(name) {
     const users = loadUsers();
     const gtid = genGtid();
-    const stamps = {};
-    STAMPS.forEach(s => stamps[s.id] = false);
+
+    const events = {};
+    EVENTS.forEach(ev => { events[ev.id] = blankStamps(); });
+
+    // Seed realistic-looking history for past events so a brand-new demo
+    // account already has something to show under "Riwayat Event": GIIAS
+    // fully wrapped up, PRJ mostly done. The active event starts fresh,
+    // except stamp 1 ("Daftar SW Passport") which this sign-up itself
+    // just satisfied.
+    STAMPS.forEach(s => { events["giias2026"][s.id] = true; });
+    STAMPS.forEach((s, i) => { events["prj2026"][s.id] = i < 7; });
+    const active = getActiveEvent();
+    if (events[active.id]) events[active.id][1] = true;
+
     users[gtid] = {
       gtid,
       name: name && name.trim() ? name.trim() : NAMES[Math.floor(Math.random() * NAMES.length)],
       joinedAt: Date.now(),
-      stamps,
+      events,
       installDismissed: false,
       notifOn: false,
     };
@@ -100,12 +135,14 @@ const SW = (() => {
     return users[gtid];
   }
 
-  function setStamp(gtid, stampId, done) {
+  function setStamp(gtid, eventId, stampId, done) {
     const users = loadUsers();
     if (!users[gtid]) return null;
-    users[gtid].stamps[stampId] = done;
+    if (!users[gtid].events[eventId]) users[gtid].events[eventId] = blankStamps();
+    users[gtid].events[eventId][stampId] = done;
     saveUsers(users);
-    appendLog(`Stamp ${stampId} (${stampName(stampId)}) diaktifkan untuk ${users[gtid].name}`);
+    const ev = getEvent(eventId);
+    appendLog(`Stamp ${stampId} (${stampName(stampId)}) diaktifkan untuk ${users[gtid].name} — ${ev ? ev.name : eventId}`);
     return users[gtid];
   }
 
@@ -114,9 +151,11 @@ const SW = (() => {
     return s ? s.name : "Stamp";
   }
 
-  function stampCount(user) {
+  function stampCount(user, eventId) {
     if (!user) return 0;
-    return Object.values(user.stamps).filter(Boolean).length;
+    const stamps = user.events && user.events[eventId];
+    if (!stamps) return 0;
+    return Object.values(stamps).filter(Boolean).length;
   }
 
   // ---- pending scan requests (customer -> staff) ----
@@ -130,16 +169,17 @@ const SW = (() => {
     broadcast({ type: "pending" });
   }
 
-  function requestScan(gtid, name, stampId) {
-    const list = loadPending().filter(p => !(p.gtid === gtid && p.stampId === stampId));
-    const req = { id: uid(), gtid, name, stampId, stampName: stampName(stampId), ts: Date.now() };
+  function requestScan(gtid, name, eventId, stampId) {
+    const list = loadPending().filter(p => !(p.gtid === gtid && p.eventId === eventId && p.stampId === stampId));
+    const ev = getEvent(eventId);
+    const req = { id: uid(), gtid, name, eventId, eventName: ev ? ev.name : eventId, stampId, stampName: stampName(stampId), ts: Date.now() };
     list.push(req);
     savePending(list);
     return req;
   }
 
-  function cancelScan(gtid, stampId) {
-    savePending(loadPending().filter(p => !(p.gtid === gtid && p.stampId === stampId)));
+  function cancelScan(gtid, eventId, stampId) {
+    savePending(loadPending().filter(p => !(p.gtid === gtid && p.eventId === eventId && p.stampId === stampId)));
   }
 
   function resolvePending(reqId) {
@@ -147,7 +187,7 @@ const SW = (() => {
     const req = list.find(r => r.id === reqId);
     if (!req) return null;
     savePending(list.filter(r => r.id !== reqId));
-    setStamp(req.gtid, req.stampId, true);
+    setStamp(req.gtid, req.eventId, req.stampId, true);
     return req;
   }
 
@@ -259,7 +299,8 @@ const SW = (() => {
   }
 
   return {
-    STAMPS, MAP_POS,
+    EVENTS, STAMPS, MAP_POS,
+    getEvent, getActiveEvent,
     loadUsers, saveUsers, getCurrentGtid, setCurrentGtid, clearCurrentGtid, getCurrentUser,
     createUser, updateUser, setStamp, stampName, stampCount,
     loadPending, savePending, requestScan, cancelScan, resolvePending,

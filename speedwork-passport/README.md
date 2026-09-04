@@ -26,14 +26,32 @@ python3 -m http.server 8080
 # then open http://localhost:8080/index.html and http://localhost:8080/staff.html
 ```
 
-## How the demo loop works
+## Multiple events, one passport
+
+The passport is shared across every offline event Speedwork Autocare runs,
+not just one. `SW.EVENTS` in `js/app.js` lists them (oldest first) —
+currently GIIAS 2026 and PRJ 2026 as history, IMOS 2026 as the one
+`active: true` event you can actually claim stamps for. Each event gets
+its own journey map / checklist / progress under the same 9-stamp
+checklist. On Home, the active event is the big cover card; past events
+show up under "Riwayat Event". A new demo account is seeded with GIIAS
+fully completed and PRJ mostly completed, so there's history to look at
+right away — GIIAS in particular is meant as the "what a finished passport
+looks like" example. From inside any passport, "Ganti Event" opens a
+switcher to jump between all of them. Stamps on a non-active (past) event
+are read-only — no QR-to-staff flow, just the record of what was claimed.
+To add the next event when the real one changes, add an entry to
+`SW.EVENTS`, flip `active` to it, and set the previous one's `active` to
+`false`.
+
+## How the demo loop works (active event)
 
 1. On `index.html`, agree to the terms and "Sign in with Google" (a
    simulated sign-in — it just asks for a name and creates a local
    profile with a generated `SW.ID`).
-2. Open the **Passport** tab and tap any stamp on the journey map (or in
-   the checklist) that isn't claimed yet, then **"Tunjukkan QR ke
-   Staff"**.
+2. Open the **Passport** tab (this always opens the active event, IMOS
+   2026) and tap any stamp on the journey map (or in the checklist) that
+   isn't claimed yet, then **"Tunjukkan QR ke Staff"**.
 3. On `staff.html`, press **START SCANNING**. The request you just made
    shows up under "Menunggu Discan" and is also auto-detected a couple of
    seconds later (simulating a successful camera scan) — or resolve it

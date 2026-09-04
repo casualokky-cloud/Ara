@@ -74,7 +74,7 @@
         <div class="pending-item__avatar">${initials(r.name)}</div>
         <div>
           <div class="pending-item__name">${r.name}</div>
-          <div class="pending-item__stamp">${r.gtid} · Stamp: ${r.stampName}</div>
+          <div class="pending-item__stamp">${r.gtid} · ${r.eventName || r.eventId} · Stamp: ${r.stampName}</div>
         </div>
         <button class="btn btn--pill-sm pending-item__go" data-resolve="${r.id}">Aktifkan</button>
       </div>
@@ -97,6 +97,11 @@
       ? entries.map(u => `<option value="${u.gtid}">${u.name} — ${u.gtid}</option>`).join("")
       : `<option value="">(belum ada customer terdaftar)</option>`;
     if (entries.some(u => u.gtid === current)) gtidSel.value = current;
+
+    const eventSel = q("#manual-event");
+    const eventCurrent = eventSel.value;
+    eventSel.innerHTML = SW.EVENTS.slice().reverse().map(ev => `<option value="${ev.id}">${ev.name}${ev.active ? " (Aktif)" : ""}</option>`).join("");
+    eventSel.value = eventCurrent || SW.getActiveEvent().id;
 
     const stampSel = q("#manual-stamp");
     const stampCurrent = stampSel.value;
@@ -121,10 +126,11 @@
   function initManualActivate() {
     q("#btn-manual-activate").addEventListener("click", () => {
       const gtid = q("#manual-gtid").value;
+      const eventId = q("#manual-event").value;
       const stampId = Number(q("#manual-stamp").value);
       if (!gtid) { toast("Belum ada customer terdaftar."); return; }
-      SW.cancelScan(gtid, stampId);
-      SW.setStamp(gtid, stampId, true);
+      SW.cancelScan(gtid, eventId, stampId);
+      SW.setStamp(gtid, eventId, stampId, true);
       toast(`Stamp ${stampId} diaktifkan untuk ${gtid}`);
       renderAll();
     });

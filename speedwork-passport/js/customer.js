@@ -9,7 +9,7 @@
   ];
 
   const BRANCHES = [
-    { name: "Speedwork Autocare — Kelapa Gading", addr: "Jl. Boulevard Raya Blok QJ 1, Kelapa Gading, Jakarta Utara", tag: "Booth GIIAS 2026" },
+    { name: "Speedwork Autocare — Kelapa Gading", addr: "Jl. Boulevard Raya Blok QJ 1, Kelapa Gading, Jakarta Utara", tag: "Booth IMOS 2026" },
     { name: "Speedwork Autocare — BSD City", addr: "Jl. Pahlawan Seribu, BSD City, Tangerang Selatan", tag: "Bengkel Mitra" },
     { name: "Speedwork Autocare — Bandung", addr: "Jl. Soekarno Hatta No. 456, Bandung", tag: "Bengkel Mitra" },
     { name: "Speedwork Autocare — Surabaya", addr: "Jl. HR Muhammad No. 88, Surabaya", tag: "Bengkel Mitra" },
@@ -23,7 +23,14 @@
   ];
 
   let activeStampSheet = null; // stamp id currently open in the sheet
+  let currentEventId = null; // which event's passport is currently open
   let qrPollTimer = null;
+
+  function eventBadge(ev, count, total) {
+    if (ev.active) return `<span class="stampitem__badge is-active">Aktif</span>`;
+    if (count >= total) return `<span class="stampitem__badge is-complete">Selesai</span>`;
+    return `<span class="stampitem__badge">${count}/${total}</span>`;
+  }
 
   function q(sel, root) { return (root || document).querySelector(sel); }
   function qa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
@@ -64,8 +71,19 @@
   function initGoDelegation() {
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-go]");
-      if (btn) goTo(btn.getAttribute("data-go"));
+      if (!btn) return;
+      const target = btn.getAttribute("data-go");
+      // any generic "Passport" nav (bottom nav, back buttons) always
+      // returns to the currently-running event's passport; browsing a
+      // past event happens explicitly via the history list / switcher.
+      if (target === "screen-passport") openEventPassport(SW.getActiveEvent().id);
+      else goTo(target);
     });
+  }
+
+  function openEventPassport(eventId) {
+    currentEventId = eventId;
+    goTo("screen-passport");
   }
 
   function goTo(screenId) {
@@ -120,10 +138,14 @@
     q("#home-name").textContent = u.name;
     q("#home-gtid").textContent = u.gtid;
 
-    const done = SW.stampCount(u);
     const total = SW.STAMPS.length;
+    const activeEvent = SW.getActiveEvent();
+    const done = SW.stampCount(u, activeEvent.id);
     q("#home-progress-num").textContent = `${done}/${total}`;
     q("#home-progress-fill").style.width = `${Math.round((done / total) * 100)}%`;
+
+    q("#active-event-label").textContent = activeEvent.subtitle.toUpperCase();
+    q("#active-event-title").textContent = activeEvent.name;
 
     q("#banner-install").classList.toggle("is-dismissed", !!u.installDismissed);
     const notifBanner = q("#banner-notif");
@@ -134,6 +156,23 @@
       markHolder.innerHTML = markGraphic();
       markHolder.dataset.filled = "1";
     }
+
+    const history = SW.EVENTS.filter(ev => !ev.active).slice().reverse();
+    q("#event-history-list").innerHTML = history.map(ev => {
+      const c = SW.stampCount(u, ev.id);
+      return `
+        <div class="stampitem" data-event="${ev.id}">
+          <div class="stampitem__num">${SW.icon("passport")}</div>
+          <div>
+            <div class="stampitem__name">${ev.name}</div>
+            <div class="stampitem__desc">${ev.subtitle} · ${ev.dateLabel}</div>
+          </div>
+          ${eventBadge(ev, c, total)}
+        </div>`;
+    }).join("") || `<div class="empty-hint">Belum ada riwayat event.</div>`;
+    qa("[data-event]", q("#event-history-list")).forEach(el => {
+      el.addEventListener("click", () => openEventPassport(el.getAttribute("data-event")));
+    });
   }
 
   function markGraphic() {
@@ -146,7 +185,7 @@
 
   function initHomeHandlers() {
     q("#profile-card").addEventListener("click", () => goTo("screen-profile"));
-    q("#open-passport").addEventListener("click", () => goTo("screen-passport"));
+    q("#open-passport").addEventListener("click", () => openEventPassport(SW.getActiveEvent().id));
     q("#quick-area").addEventListener("click", () => goTo("screen-area"));
     q("#quick-gallery").addEventListener("click", () => goTo("screen-gallery"));
     q("#btn-notif-bell").addEventListener("click", () => toast("Belum ada notifikasi baru"));
@@ -175,8 +214,25 @@
   function renderPassport() {
     const u = requireUser();
     if (!u) return;
-    buildStampMap(u);
-    buildStampList(u);
+    if (!currentEventId) currentEventId = SW.getActiveEvent().id;
+    const ev = SW.getEvent(currentEventId) || SW.getActiveEvent();
+
+    q("#passport-topbar-title").textContent = ev.name;
+    q("#passport-book-event").textContent = `SPEEDWORK ${ev.name.toUpperCase()} PASSPORT`;
+    q("#passport-book-sub").textContent = ev.active
+      ? "Ikuti alur di bawah & kumpulkan seluruh stempel"
+      : `${ev.subtitle} · ${ev.dateLabel}`;
+
+    const statusBanner = q("#event-status-banner");
+    if (ev.active) {
+      statusBanner.style.display = "none";
+    } else {
+      statusBanner.style.display = "flex";
+      q("#event-status-text").textContent = `Event ${ev.name} sudah selesai — ini riwayat stempel kamu.`;
+    }
+
+    buildStampMap(u, ev);
+    buildStampList(u, ev);
   }
 
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -201,7 +257,8 @@
     return d;
   }
 
-  function buildStampMap(u) {
+  function buildStampMap(u, ev) {
+    const stamps = u.events[ev.id];
     const map = q("#stampmap");
     qa(".stampnode, .route-car, .route-flag", map).forEach(n => n.remove());
     const svg = q("#stampmap-svg");
@@ -234,7 +291,7 @@
     roadDash.setAttribute("d", d);
     svg.appendChild(roadDash);
 
-    const doneCount = SW.stampCount(u);
+    const doneCount = Object.values(stamps).filter(Boolean).length;
     const total = SW.STAMPS.length;
     const frac = total ? doneCount / total : 0;
     const len = roadProgress.getTotalLength();
@@ -244,11 +301,11 @@
       roadProgress.style.strokeDashoffset = `${len * (1 - frac)}`;
     });
 
-    const nextStamp = SW.STAMPS.find(s => !u.stamps[s.id]);
+    const nextStamp = ev.active ? SW.STAMPS.find(s => !stamps[s.id]) : null;
 
     SW.STAMPS.forEach((s, i) => {
       const pos = SW.MAP_POS[i];
-      const done = !!u.stamps[s.id];
+      const done = !!stamps[s.id];
       const isNext = !done && nextStamp && nextStamp.id === s.id;
       const node = document.createElement("div");
       node.className = "stampnode" + (done ? " is-done" : "") + (isNext ? " is-next" : "");
@@ -314,10 +371,11 @@
     </svg>`;
   }
 
-  function buildStampList(u) {
+  function buildStampList(u, ev) {
+    const stamps = u.events[ev.id];
     const list = q("#stamplist");
     list.innerHTML = SW.STAMPS.map(s => {
-      const done = !!u.stamps[s.id];
+      const done = !!stamps[s.id];
       return `
         <div class="stampitem${done ? " is-done" : ""}" data-stamp="${s.id}">
           <div class="stampitem__num">${s.id}</div>
@@ -349,6 +407,7 @@
   function openStampSheet(stampId) {
     const u = requireUser();
     if (!u) return;
+    const ev = SW.getEvent(currentEventId) || SW.getActiveEvent();
     const s = SW.STAMPS.find(x => x.id === stampId);
     activeStampSheet = stampId;
 
@@ -356,17 +415,19 @@
     q("#stampdetail-title").textContent = `Stamp ${s.id} — ${s.name}`;
     q("#stampdetail-desc").textContent = s.desc;
 
-    const done = !!u.stamps[stampId];
-    q("#stampdetail-todo").style.display = done ? "none" : "block";
+    const done = !!u.events[ev.id][stampId];
+    q("#stampdetail-todo").style.display = (!done && ev.active) ? "block" : "none";
     q("#stampdetail-qr").style.display = "none";
     q("#stampdetail-done").style.display = done ? "block" : "none";
+    q("#stampdetail-closed").style.display = (!done && !ev.active) ? "block" : "none";
 
     openOverlay("overlay-stamp");
   }
 
   function startQrFlow() {
     const u = SW.getCurrentUser();
-    if (!u || activeStampSheet == null) return;
+    const ev = SW.getEvent(currentEventId) || SW.getActiveEvent();
+    if (!u || activeStampSheet == null || !ev.active) return;
     const stampId = activeStampSheet;
 
     q("#stampdetail-todo").style.display = "none";
@@ -374,18 +435,18 @@
     q("#qr-gtid").textContent = u.gtid;
     q("#qr-status-text").textContent = "Menunggu discan staff…";
 
-    const token = `SW-PASSPORT|${u.gtid}|${stampId}|${Date.now()}`;
+    const token = `SW-PASSPORT|${ev.id}|${u.gtid}|${stampId}|${Date.now()}`;
     SW.drawFakeQr(q("#qr-canvas"), token, "#00753a");
-    SW.requestScan(u.gtid, u.name, stampId);
+    SW.requestScan(u.gtid, u.name, ev.id, stampId);
 
     clearInterval(qrPollTimer);
-    qrPollTimer = setInterval(() => checkStampClaimed(u.gtid, stampId), 700);
+    qrPollTimer = setInterval(() => checkStampClaimed(u.gtid, ev.id, stampId), 700);
   }
 
-  function checkStampClaimed(gtid, stampId) {
+  function checkStampClaimed(gtid, eventId, stampId) {
     const users = SW.loadUsers();
     const u = users[gtid];
-    if (u && u.stamps[stampId]) {
+    if (u && u.events[eventId] && u.events[eventId][stampId]) {
       clearInterval(qrPollTimer);
       qrPollTimer = null;
       closeOverlay("overlay-stamp");
@@ -447,7 +508,7 @@
     q("#profile-avatar").textContent = initials(u.name);
     q("#profile-name").textContent = u.name;
     q("#profile-gtid").textContent = u.gtid;
-    q("#profile-stamps").textContent = `${SW.stampCount(u)}/${SW.STAMPS.length}`;
+    q("#profile-stamps").textContent = `${SW.stampCount(u, SW.getActiveEvent().id)}/${SW.STAMPS.length}`;
     q("#profile-since").textContent = new Date(u.joinedAt).toLocaleDateString("id-ID", { month: "short", year: "numeric" });
     SW.drawFakeQr(q("#profile-qr"), `SW-ID|${u.gtid}`, "#00753a");
   }
@@ -458,6 +519,35 @@
       q("#tnc-check").checked = false;
       q("#btn-google").disabled = true;
       goTo("screen-login");
+    });
+  }
+
+  // ---------------- event switcher ----------------
+
+  function initEventSwitcher() {
+    q("#btn-switch-event").addEventListener("click", () => {
+      const u = SW.getCurrentUser();
+      if (!u) return;
+      const total = SW.STAMPS.length;
+      q("#event-switch-list").innerHTML = SW.EVENTS.slice().reverse().map(ev => {
+        const c = SW.stampCount(u, ev.id);
+        return `
+          <div class="stampitem${ev.id === currentEventId ? " is-current" : ""}" data-switch-event="${ev.id}">
+            <div class="stampitem__num">${SW.icon("passport")}</div>
+            <div>
+              <div class="stampitem__name">${ev.name}</div>
+              <div class="stampitem__desc">${ev.subtitle} · ${ev.dateLabel}</div>
+            </div>
+            ${eventBadge(ev, c, total)}
+          </div>`;
+      }).join("");
+      qa("[data-switch-event]", q("#event-switch-list")).forEach(el => {
+        el.addEventListener("click", () => {
+          closeAllOverlays();
+          openEventPassport(el.getAttribute("data-switch-event"));
+        });
+      });
+      openOverlay("overlay-events");
     });
   }
 
@@ -489,8 +579,8 @@
       if (activeScreen === "screen-home") renderHome();
       if (activeScreen === "screen-passport") renderPassport();
       if (activeScreen === "screen-profile") renderProfile();
-      if (activeStampSheet != null && q("#overlay-stamp").classList.contains("is-open")) {
-        checkStampClaimed(u.gtid, activeStampSheet);
+      if (activeStampSheet != null && currentEventId && q("#overlay-stamp").classList.contains("is-open")) {
+        checkStampClaimed(u.gtid, currentEventId, activeStampSheet);
       }
     });
   }
@@ -504,6 +594,7 @@
     initLogin();
     initHomeHandlers();
     initViewTabs();
+    initEventSwitcher();
     initOverlayHandlers();
     initProfileHandlers();
     initSync();
