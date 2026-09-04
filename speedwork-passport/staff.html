@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PIC Scanner — Speedwork Autocare</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body{ align-items:flex-start; }
+  .staff-page{ width:100%; padding:26px 16px 60px; }
+</style>
+</head>
+<body>
+<div class="staff-page">
+  <div class="staff-wrap">
+    <div class="staff-header">
+      <img src="assets/speedwork-logo.png" alt="Speedwork Autocare">
+      <div class="staff-header__title"><strong>PIC Scanner</strong><span>SW Passport Staff Console</span></div>
+    </div>
+
+    <div class="scanner-box" id="scanner-box">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-box__frame"></div>
+      <div class="scanner-box__scanline"></div>
+      <div class="scanner-box__idle" id="scanner-idle">
+        <span data-icon="camera"></span>
+        <div>Camera not started</div>
+      </div>
+    </div>
+    <button class="btn btn--primary" id="btn-start-scan"><span data-icon="scan"></span> START SCANNING</button>
+
+    <div class="pending-list">
+      <div class="section-title" style="margin-top:22px"><span data-icon="bell"></span> Menunggu Discan (<span id="pending-count">0</span>)</div>
+      <div id="pending-items"></div>
+      <div class="empty-hint" id="pending-empty">Belum ada customer yang menunjukkan QR. Buka SW Passport (index.html) di tab/HP lain lalu tekan "Tunjukkan QR ke Staff".</div>
+    </div>
+
+    <div class="manual-box">
+      <div class="section-title" style="margin:0 0 12px">Aktivasi Manual</div>
+      <label for="manual-gtid">Pilih Customer (SW.ID)</label>
+      <select id="manual-gtid"></select>
+      <label for="manual-event">Pilih Event</label>
+      <select id="manual-event"></select>
+      <label for="manual-stamp">Pilih Stamp</label>
+      <select id="manual-stamp"></select>
+      <button class="btn btn--outline btn--block" id="btn-manual-activate">Aktifkan Stamp</button>
+    </div>
+
+    <div class="log-list">
+      <div class="section-title" style="margin-top:22px">Log Aktivitas</div>
+      <div id="log-items"></div>
+      <div class="empty-hint" id="log-empty">Belum ada aktivitas.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%)"></div>
+
+<script src="js/app.js"></script>
+<script src="js/staff.js"></script>
+</body>
+</html>
